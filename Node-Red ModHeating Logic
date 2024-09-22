@@ -1,0 +1,72 @@
+// Retrieve global context values
+var ElementMUA1 = global.get('ElementMua1');
+var TargetTemp = global.get('TargetTemp') || 70;  // Default target temp is 70°F
+var DischargeAir = global.get('DischargeAir');
+var OutdoorHumidity = global.get('OutdoorHumidity');
+var isAway = global.get('ghostThermostat.away');  // Retrieve the 'away' status from global context
+
+// Set thresholds and limits
+var dischargeAirLimit = 105;  // Heating lockout if DischargeAir exceeds 105°F
+var humidityMin = 60;  // Minimum humidity threshold for dehumidification
+var humidityMax = 90;  // Maximum humidity threshold for dehumidification
+var lowFire = 2;  // Low fire signal for the gas valve
+var maxFire = 10;  // Max fire signal for the gas valve
+var gasValveSignal = lowFire;  // Always start at low fire
+
+// Check if system is in 'away' mode or DischargeAir exceeds the limit
+if (isAway) {
+    var output0 = { payload: 0 };  // Heat off
+    var output1 = { payload: 0 };  // Dehum off
+    var output2 = { payload: 0 };  // Gas valve signal 0
+    node.status({ fill: "yellow", shape: "ring", text: "Away mode active, no heating or dehumidification" });
+    return [output0, output1, output2];
+}
+
+if (DischargeAir > dischargeAirLimit) {
+    var output0 = { payload: 0 };  // Heat off
+    var output1 = { payload: 0 };  // Dehum off
+    var output2 = { payload: 0 };  // Gas valve signal 0
+    node.status({ fill: "blue", shape: "ring", text: "Heating locked out, DischargeAir > 105°F" });
+    return [output0, output1, output2];
+}
+
+// Check for dehumidification condition (OutdoorHumidity between 50% and 90%)
+if (OutdoorHumidity > humidityMin && OutdoorHumidity < humidityMax) {
+    // Dehumidification is needed
+    if (msg.payload === 1) {
+        gasValveSignal = lowFire;  // Always low fire for dehumidification
+        var output0 = { payload: 0 };  // Heat off (can't be active with dehum)
+        var output1 = { payload: 1 };  // Dehum on
+        var output2 = { payload: gasValveSignal };  // Gas valve signal for dehum
+        node.status({ fill: "green", shape: "dot", text: "Dehumidification active, low fire" });
+        return [output0, output1, output2];
+    }
+}
+
+// Handle heating logic if dehumidification is not active
+if (msg.payload === 1) {
+    var TempDifference = TargetTemp - ElementMUA1;
+    if (TempDifference >= 1.4) {
+        // Heating is needed
+        gasValveSignal = (DischargeAir < TargetTemp) ? lowFire : maxFire;  // Modulate gas valve to maintain DischargeAir setpoint
+        var output0 = { payload: 1 };  // Heat on
+        var output1 = { payload: 0 };  // Dehum off (can't be active with heat)
+        var output2 = { payload: gasValveSignal };  // Gas valve signal for heat
+        node.status({ fill: "blue", shape: "dot", text: "Heating active, modulating gas valve" });
+        return [output0, output1, output2];
+    } else {
+        // No heating needed
+        var output0 = { payload: 0 };  // Heat off
+        var output1 = { payload: 0 };  // Dehum off
+        var output2 = { payload: 0 };  // Gas valve off
+        node.status({ fill: "red", shape: "ring", text: "No heating needed, within setpoint" });
+        return [output0, output1, output2];
+    }
+}
+
+// If none of the above conditions are met, turn everything off
+var output0 = { payload: 0 };  // Heat off
+var output1 = { payload: 0 };  // Dehum off
+var output2 = { payload: 0 };  // Gas valve off
+node.status({ fill: "red", shape: "ring", text: "System off" });
+return [output0, output1, output2];
