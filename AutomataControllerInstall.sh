@@ -1,20 +1,38 @@
 #!/bin/bash
 
-# Run the script to set the clock to local internet time
-sudo bash set_internet_time_rpi4.sh
+# Function to run updates and handle errors
+run_update() {
+    cd "$1/update" || { echo "Update folder not found for $1, skipping..."; return; }
+    sudo ./update 0 || { echo "Update failed for $1, continuing..."; }
+    cd /home/Automata || cd /Automata/pi
+}
 
-# Run the script to set FullLogo.png as desktop and splash screen
-sudo bash set_full_logo_image_rpi4.sh
+# Clone and install megabas-rpi
+git clone https://github.com/SequentMicrosystems/megabas-rpi.git
+cd /home/Automata/megabas-rpi
+sudo make install
+run_update "/home/Automata/megabas-rpi"
 
-# Run the script to install mosquitto, configure user and password
-sudo bash setup_mosquitto.sh
+# Clone and install megaind-rpi
+git clone https://github.com/SequentMicrosystems/megaind-rpi.git
+cd /home/Automata/megaind-rpi
+sudo make install
+run_update "/home/Automata/megaind-rpi"
 
-# Run the script to increase the swap size to 2048 MB
-sudo bash increase_swap_size.sh
+# Clone and install 16univin-rpi
+git clone https://github.com/SequentMicrosystems/16univin-rpi.git
+cd /Automata/pi/16univin-rpi
+sudo make install
+run_update "/Automata/pi/16univin-rpi"
 
-# Run the script to install/update Node-RED and enable the service
-sudo bash install_node_red.sh
+# Clone and install 16relind-rpi
+git clone https://github.com/SequentMicrosystems/16relind-rpi.git
+cd /home/Automata/16relind-rpi
+sudo make install
+run_update "/home/Automata/16relind-rpi"
 
-# Reboot the system to apply all changes
-echo "Rebooting the system now..."
-sudo reboot
+# Clone and install 8relind-rpi
+git clone https://github.com/SequentMicrosystems/8relind-rpi.git
+cd /home/Automata/8relind-rpi
+sudo make install
+run_update "/home/Automata/8relind-rpi"
