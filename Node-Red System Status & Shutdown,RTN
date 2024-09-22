@@ -1,0 +1,42 @@
+// Retrieve alarm statuses from global context
+var heatingAlarm = global.get('heating_alarm') || "Normal";
+var coolingAlarm = global.get('cooling_alarm') || "Normal";
+var ventAlarm = global.get('vent_alarm') || "Normal";
+var alarmOverrideStatus = global.get('AlarmOverrideStatus') || "Inactive"; // Retrieve the override status
+var overrideTimerSet = global.get('OverrideTimerSet') || false; // Retrieve the timer status
+
+// Check if the incoming msg.payload === "Active" to trigger the 10-minute override
+if (msg.payload === "Active") {
+    // Set the AlarmOverrideStatus and timer
+    global.set('AlarmOverrideStatus', "Active");
+    global.set('OverrideTimerSet', true);
+
+    // Set a 10-minute delay for the override (600000 ms = 10 minutes)
+    setTimeout(function () {
+        global.set('AlarmOverrideStatus', "Inactive"); // Disable override after 10 minutes
+        global.set('OverrideTimerSet', false); // Reset the timer status
+        node.status({ fill: "yellow", shape: "ring", text: "Alarm override expired" });
+    }, 600000); // 10 minutes
+
+    // Send msg.payload = 1 during the override period
+    msg.payload = 1;
+    node.status({ fill: "blue", shape: "dot", text: "Alarm override active (10 min)" });
+    return msg;
+}
+
+// Check if any of the alarms are in "Alarm" and the override is not active
+if ((heatingAlarm === "Alarm" || coolingAlarm === "Alarm" || ventAlarm === "Alarm") && alarmOverrideStatus === "Inactive") {
+    // If any alarm is in "Alarm" state and no override, set msg.payload to 0
+    msg.payload = 0;
+    node.status({ fill: "red", shape: "ring", text: "Alarm detected" });
+} else if (alarmOverrideStatus === "Active") {
+    // If the override is active, send msg.payload = 1
+    msg.payload = 1;
+    node.status({ fill: "blue", shape: "dot", text: "Alarm override in effect" });
+} else {
+    // If all alarms are "Normal" and no override, set msg.payload to 1
+    msg.payload = 1;
+    node.status({ fill: "green", shape: "dot", text: "All systems normal" });
+}
+
+return msg;
