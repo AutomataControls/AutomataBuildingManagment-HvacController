@@ -1,0 +1,80 @@
+// Retrieve the current mode, DischargeAir temperature, and Alarm Override status
+var mode = global.get('HvacState');  // 'heating', 'cooling', or 'vent'
+var DischargeAir = global.get('DischargeAir');
+var AlarmOverrideStatus = global.get('AlarmOverrideStatus') || "Inactive";  // Track alarm override status
+
+// Initialize output variables
+var heatingStatus = { payload: "Normal" };
+var coolingStatus = { payload: "Normal" };
+var ventStatus = { payload: "Normal" };
+var alarmStatus = { payload: "Normal" };  // Default alarm to "Normal" (no alarm)
+var overrideStatus = { payload: AlarmOverrideStatus };  // Output "Active" or "Inactive" for Alarm Override
+
+// Define DischargeAir thresholds
+var heatingMin = 40;  // Heating minimum temperature
+var heatingMax = 105;  // Heating maximum temperature
+var coolingMin = 40;  // Cooling minimum temperature
+var coolingMax = 95;  // Cooling maximum temperature
+var ventMin = 40;  // Vent minimum temperature
+var ventMax = 95;  // Vent maximum temperature
+
+// Alarm identifiers for global context
+var heatingAlarmId = 'heating_alarm';
+var coolingAlarmId = 'cooling_alarm';
+var ventAlarmId = 'vent_alarm';
+
+// Function to update global alarm status
+function setGlobalAlarm(alarmId, state) {
+    global.set(alarmId, state);  // Set alarm in global context
+    if (state === "Alarm") {
+        node.status({ fill: "red", shape: "ring", text: "ALARM: " + alarmId });
+    }
+}
+
+// Handle Alarm Override logic
+if (AlarmOverrideStatus === "Active") {
+    alarmStatus.payload = "Normal";  // Override clears any alarms
+    node.status({ fill: "blue", shape: "dot", text: "Alarm Override Active" });
+    return [heatingStatus, coolingStatus, ventStatus, alarmStatus, overrideStatus];  // Return override status as "Active"
+}
+
+// Check which mode is active and validate DischargeAir thresholds
+if (mode === 'heating') {
+    if (DischargeAir < heatingMin || DischargeAir > heatingMax) {
+        heatingStatus.payload = "Alarm";  // Heating abnormal
+        setGlobalAlarm(heatingAlarmId, "Alarm");  // Set heating alarm
+        alarmStatus.payload = "Alarm";  // Set alarm status to "Alarm"
+        node.status({ fill: "red", shape: "ring", text: "Heating abnormal: " + DischargeAir + "°F" });
+    } else {
+        heatingStatus.payload = "Normal";  // Heating normal
+        setGlobalAlarm(heatingAlarmId, "Normal");  // Reset heating alarm
+        node.status({ fill: "green", shape: "dot", text: "Heating normal: " + DischargeAir + "°F" });
+    }
+} else if (mode === 'cooling') {
+    if (DischargeAir < coolingMin || DischargeAir > coolingMax) {
+        coolingStatus.payload = "Alarm";  // Cooling abnormal
+        setGlobalAlarm(coolingAlarmId, "Alarm");  // Set cooling alarm
+        alarmStatus.payload = "Alarm";  // Set alarm status to "Alarm"
+        node.status({ fill: "red", shape: "ring", text: "Cooling abnormal: " + DischargeAir + "°F" });
+    } else {
+        coolingStatus.payload = "Normal";  // Cooling normal
+        setGlobalAlarm(coolingAlarmId, "Normal");  // Reset cooling alarm
+        node.status({ fill: "green", shape: "dot", text: "Cooling normal: " + DischargeAir + "°F" });
+    }
+} else if (mode === 'vent') {
+    if (DischargeAir < ventMin || DischargeAir > ventMax) {
+        ventStatus.payload = "Alarm";  // Vent abnormal
+        setGlobalAlarm(ventAlarmId, "Alarm");  // Set vent alarm
+        alarmStatus.payload = "Alarm";  // Set alarm status to "Alarm"
+        node.status({ fill: "red", shape: "ring", text: "Vent abnormal: " + DischargeAir + "°F" });
+    } else {
+        ventStatus.payload = "Normal";  // Vent normal
+        setGlobalAlarm(ventAlarmId, "Normal");  // Reset vent alarm
+        node.status({ fill: "green", shape: "dot", text: "Vent normal: " + DischargeAir + "°F" });
+    }
+} else {
+    node.warn("Invalid HVAC mode detected: " + mode);
+}
+
+// Output the status for heating, cooling, vent, alarms, and alarm override
+return [heatingStatus, coolingStatus, ventStatus, alarmStatus, overrideStatus];
