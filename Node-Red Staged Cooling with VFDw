@@ -1,0 +1,123 @@
+// Retrieve the alarm statuses from global context
+var heatingAlarm = global.get('heating_alarm') || "Normal";
+var coolingAlarm = global.get('cooling_alarm') || "Normal";
+var ventAlarm = global.get('vent_alarm') || "Normal";
+
+// Check if the incoming msg.payload is 1 (start cooling) or 0 (shut down or vent mode)
+if (msg.payload === 1) {
+    // Cooling Logic
+    var DischargeAir = global.get('DischargeAir');
+    var OutdoorAirTemp = global.get('OutdoorAirTemp');
+    var TargetTemp = global.get('TargetTemp');
+    var VFDspeed = 95; // Set VFD to 92% for all cooling modes
+    var stage2Activated = context.get('stage2Activated') || false;  // Track if Stage 2 is already activated
+    var stage2TimerSet = context.get('stage2TimerSet') || false;  // Track if the timer for Stage 2 is already set
+
+    // Define thresholds
+    var stage1Threshold = 50; // Temperature to activate Stage 1
+    var stage2Threshold = 58; // Temperature to activate Stage 2
+    var lockoutThreshold = 65; // Cooling lockout if OutdoorAirTemp is below this value
+
+    // Stage 2 delay configuration (5 minutes)
+    var stage2Delay = 150000; // 150000 ms = 2.5 minutes
+
+    // Check OutdoorAirTemp interlock
+    if (OutdoorAirTemp < lockoutThreshold) {
+        node.warn("Cooling locked out. OutdoorAirTemp is below threshold.");
+
+        var output0 = { payload: 0 };  // Chiller Enable
+        var output1 = { payload: 0 };  // Stage 1
+        var output2 = { payload: 0 };  // Stage 2
+        global.set('VFDspeed', 98);  // Set VFD to vent mode speed (98%)
+        node.status({ fill: "blue", shape: "ring", text: "Cooling locked out, vent mode active (VFD Speed: 98%)" });
+        return [output0, output1, output2, { payload: (98 / 100) * 10 }]; // Set VFD to 92% for vent mode
+    }
+
+    // Activate cooling logic
+    var output0 = { payload: 1 };  // Chiller Enable
+    var output1 = { payload: 0 };  // Stage 1
+    var output2 = { payload: 0 };  // Stage 2
+
+    if (DischargeAir >= stage1Threshold) {
+        output1.payload = 1;  // Activate Stage 1
+        node.warn("Stage 1 activated.");
+        node.status({ fill: "green", shape: "dot", text: "Stage 1 active, VFD Speed: 98%" });
+    }
+
+    // Adjust VFD speed dynamically based on cooling stages
+    if (output1.payload === 1) {
+        VFDspeed = 85;  // Set VFD to 98% for Stage 1
+        node.status({ fill: "green", shape: "dot", text: "Cooling active, Stage 1, VFD Speed: 98%" });
+    } else {
+        VFDspeed = 98; // No cooling, transition to vent mode at 92% speed
+        node.status({ fill: "yellow", shape: "ring", text: "No active cooling, vent mode (VFD Speed: 98%)" });
+    }
+
+    global.set('VFDspeed', VFDspeed);  // Update global VFD speed
+
+    // Set the timer for Stage 2 activation, but only if it hasn't been set yet
+    if (!stage2TimerSet && !stage2Activated) {
+        node.warn("Setting Stage 2 activation timer...");
+        stage2TimerSet = true;
+        context.set('stage2TimerSet', stage2TimerSet);  // Store timer set status
+
+        setTimeout(function () {
+            // Recheck DischargeAir temperature for Stage 2 activation
+            DischargeAir = global.get('DischargeAir');
+            if (DischargeAir >= stage2Threshold) {
+                output2.payload = 1;  // Activate Stage 2
+                VFDspeed = 98;  // Keep VFD speed at 92% for Stage 2
+                global.set('VFDspeed', VFDspeed);  // Save updated VFD speed
+                stage2Activated = true;
+                context.set('stage2Activated', stage2Activated);  // Mark Stage 2 as activated
+                node.status({ fill: "green", shape: "dot", text: "Stage 2 active, VFD Speed: 98%" });
+                node.send([output0, output1, output2, { payload: (VFDspeed / 100) * 10 }]);  // Send VFD output after delay
+            } else {
+                node.warn("Stage 2 not activated. DischargeAir below threshold.");
+                node.status({ fill: "yellow", shape: "ring", text: "Stage 2 not needed, VFD Speed: " + VFDspeed + "%" });
+                // Send current output states even if Stage 2 isn't activated
+                node.send([output0, output1, output2, { payload: (VFDspeed / 100) * 10 }]);
+            }
+        }, stage2Delay);
+    }
+
+    // Send VFD output (separate from cooling stages)
+    return [output0, output1, output2, { payload: (VFDspeed / 100) * 10 }];
+} else if (msg.payload === 0) {
+    // Handle shutdown logic (no cooling and check for alarms)
+
+    // Check if any alarms are present
+    if (heatingAlarm === "Alarm" || coolingAlarm === "Alarm" || ventAlarm === "Alarm") {
+        // If any alarms are present, shut everything down (no vent mode)
+        node.warn("Alarm detected, shutting down all systems.");
+        var output0 = { payload: 0 };  // Chiller Disable
+        var output1 = { payload: 0 };  // Stage 1 Off
+        var output2 = { payload: 0 };  // Stage 2 Off
+        global.set('VFDspeed', 0);  // Set VFD speed to 0% (complete shutdown)
+
+        // Update node status for complete shutdown due to alarm
+        node.status({ fill: "red", shape: "ring", text: "Alarm detected, systems shut down (VFD Speed: 0%)" });
+
+        // Return all zeros for complete system shutdown
+        return [output0, output1, output2, { payload: 0 }];
+    }
+
+    // If no alarms, transition to vent mode
+    node.warn("No cooling needed, transitioning to vent mode.");
+
+    // Reset Stage 2 activation and timer if cooling stops
+    context.set('stage2Activated', false);
+    context.set('stage2TimerSet', false);
+
+    // Transition to vent mode
+    var output0 = { payload: 0 };  // Chiller Disable
+    var output1 = { payload: 0 };  // Stage 1 Off
+    var output2 = { payload: 0 };  // Stage 2 Off
+    global.set('VFDspeed', 98);  // Set VFD speed to 98% for vent mode
+
+    // Update node status for vent mode
+    node.status({ fill: "yellow", shape: "ring", text: "Vent mode active, VFD Speed: 98%" });
+
+    // Return outputs for vent mode
+    return [output0, output1, output2, { payload: (98 / 100) * 10 }];  // Set VFD to 98% for vent mode
+}
