@@ -17,11 +17,11 @@ run_script "setup_mosquitto.sh"
 # Step 4: Increase the swap size to 2048 MB
 run_script "increase_swap_size.sh"
 
-# Step 5: Install/update Node-RED and enable the service
-run_script "install_node_red.sh"
-
 # Step 6: Run SequentMSInstall.sh to install Sequent Microsystems drivers
 run_script "SequentMSInstall.sh"
+
+# Step 5: Install/update Node-RED and enable the service
+run_script "install_node_red.sh"
 
 # Step 7: Create a desktop icon to launch Chromium to Node-RED and UI
 DESKTOP_FILE="/home/Automata/Desktop/NodeRed.desktop"
