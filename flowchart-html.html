@@ -38,106 +38,95 @@
 
     <h1>Automata Operational Flow</h1>
 
-    <!-- Hosted logo (example using Imgur) -->
-    <img src="https://i.imgur.com/your_image_id.png" alt="Logo" />
+    <!-- Referencing local FullLogo.png file -->
+    <img src="FullLogo.png" alt="Logo" />
 
     <div id="flowchart">
         <pre class="mermaid">
         flowchart LR
-            %% Control/Automation Team at Top Left with Bold Black Lettering and Teal Color
-            subgraph ControlAutomationTeam[Control/Automation Team]
-                AJS[Andrew Jewell Sr - Programming/Development] --> PD[Servicing/Programming]
-                CM[Current Mechanical - Monitoring/Servicing] --> SM[Service Dept Manager]
-                CM --> Dispatch[Dispatch]
-                CM --> Techs[Service Techs]
-            end
-            
-            %% Main Connections from Control/Automation Team
-            ControlAutomationTeam --> LocalSystem
-            ControlAutomationTeam --> MonitoringAndAlarming
-            ControlAutomationTeam --> ServicingRepair
+        %% Control/Automation Team at Top Left
+        subgraph ControlAutomationTeam[Control/Automation Team]
+            AJS[Andrew Jewell Sr - Programming/Development] --> PD[Servicing/Programming]
+            CM[Current Mechanical - Monitoring/Servicing] --> SM[Service Dept Manager]
+            CM --> Dispatch[Dispatch]
+            CM --> Techs[Service Techs]
+        end
+        ControlAutomationTeam --> LocalSystem
+        ControlAutomationTeam --> MonitoringAndAlarming
+        ControlAutomationTeam --> ServicingRepair
+        %% Local System Section
+        subgraph LocalSystem
+            direction LR
+            RPI[Raspberry Pi 4B - Central Controller] --> Automata[Automata Controller - Building Management]
+            RPI --> RealVNC[RealVNC - Remote Access]
+            RPI --> Firewall[Firewall - Network Security]
+            RPI --> VPN[VPN - Secure Remote Access]
+            Automata --> IoTSensors[IoT Sensors]
+            Automata --> DataProcessing[Data Normalization and Processing]
+            DataProcessing --> InfluxDB[InfluxDB]
+            DataProcessing --> NodeRed[Node Red]
+            DataProcessing --> Grafana[Grafana]
+            DataProcessing --> Prometheus[Prometheus]
+        end
+        LocalSystem --> SensorsAndEquipment
+        %% Sensors and Equipment Section
+        subgraph SensorsAndEquipment
+            direction LR
+            Automata -->|I2C Communication| TempSensors[Temperature Sensors]
+            Automata -->|RS485 Communication| LegacyHVAC[Legacy HVAC Equipment]
+            Automata -->|1-Wire Communication| Boilers[Boilers, Pumps, VAV Boxes]
+            Automata --> SensorData[Sensor Data]
+            SensorData --> TempSensors
+            SensorData --> Boilers
+            LegacyHVAC --> NodeRed[Node-RED]
+            NodeRed --> Modbus[Modbus/RTU TCP/IP]
+            NodeRed --> LonWorks[LonWorks]
+            NodeRed --> BACnet[BACnet]
+            NodeRed --> KNX[KNX]
+            NodeRed --> DALI[DALI]
+            Modbus --> BoilersLegacy[Legacy Boilers]
+            LonWorks --> ChillersLegacy[Legacy Chillers]
+            BACnet --> PumpsLegacy[Legacy Pumps]
+            KNX --> ModernHVAC[Modern HVAC Equipment]
+            DALI --> EMS[Energy Management Suite]
+        end
+        LocalSystem --> CloudServices
+        %% Cloud Services Section
+        subgraph CloudServices
+            direction LR
+            DataProcessing --> MQTTBroker[MQTT Broker]
+            MQTTBroker --> AWSIoT[AWS IoT Core]
+            MQTTBroker --> AWSLambda[AWS Lambda]
+            MQTTBroker --> S3[Amazon S3]
+            MQTTBroker --> DynamoDB[DynamoDB]
+        end
+        %% Monitoring and Alarming Section
+        subgraph MonitoringAndAlarming
+            direction TB
+            EquipmentMonitoring[Equipment Status Monitoring] --> Alarming[Alarming Notifier]
+            Alarming --> OnCallNotifications[Oncall Notifications via SMS, Email]
+            EquipmentMonitoring --> FacilityManagers[Facility Managers]
+            Alarming --> ServiceTechsAlarming[Service Techs]
+            Alarming --> MaintenanceManagersAlarming[Maintenance Managers]
+        end
+        %% Servicing and Repair Block
+        subgraph ServicingRepair
+            direction TB
+            Servicing[Servicing/Repair of Equipment] --> PD
+            Servicing --> CM
+        end
 
-            %% Local System Section
-            subgraph LocalSystem
-                direction LR
-                RPI[Raspberry Pi 4B - Central Controller] --> Automata[Automata Controller - Building Management]
-                RPI --> RealVNC[RealVNC - Remote Access]
-                RPI --> Firewall[Firewall - Network Security]
-                RPI --> VPN[VPN - Secure Remote Access]
-                Automata --> IoTSensors[IoT Sensors]
-                Automata --> DataProcessing[Data Normalization and Processing]
-                DataProcessing --> InfluxDB[InfluxDB]
-                DataProcessing --> NodeRed[Node Red]
-                DataProcessing --> Grafana[Grafana]
-                DataProcessing --> Prometheus[Prometheus]
-            end
+        %% Apply Styles
+        classDef lightGrey fill:#F0F0F0,stroke:#333;
+        classDef orangeHighlight stroke:#EF8800,stroke-width:2px,font-weight:bold;
+        classDef tealHighlight fill:#00A8A8,stroke:#000,font-weight:bold,color:#000;
 
-            %% Local System Connects to Sensors and Equipment
-            LocalSystem --> SensorsAndEquipment
+        %% Assign Styles to Specific Blocks
+        class ControlAutomationTeam tealHighlight;
+        class AJS,CM,PD,RealVNC,Firewall,VPN,InfluxDB,NodeRed,Grafana,Prometheus,Automata,IoTSensors,TempSensors,LegacyHVAC,Boilers,SensorsAndEquipment,SensorData,MQTTBroker,AWSIoT,AWSLambda,S3,DynamoDB,EquipmentMonitoring,Alarming,OnCallNotifications,FacilityManagers,ServiceTechsAlarming,MaintenanceManagersAlarming lightGrey;
 
-            %% Sensors and Equipment Section
-            subgraph SensorsAndEquipment
-                direction LR
-                Automata -->|I2C Communication| TempSensors[Temperature Sensors]
-                Automata -->|RS485 Communication| LegacyHVAC[Legacy HVAC Equipment]
-                Automata -->|1-Wire Communication| Boilers[Boilers, Pumps, VAV Boxes]
-                Automata --> SensorData[Sensor Data]
-                SensorData --> TempSensors
-                SensorData --> Boilers
-                LegacyHVAC --> NodeRed[Node-RED]
-                NodeRed --> Modbus[Modbus/RTU TCP/IP]
-                NodeRed --> LonWorks[LonWorks]
-                NodeRed --> BACnet[BACnet]
-                NodeRed --> KNX[KNX]
-                NodeRed --> DALI[DALI]
-                Modbus --> BoilersLegacy[Legacy Boilers]
-                LonWorks --> ChillersLegacy[Legacy Chillers]
-                BACnet --> PumpsLegacy[Legacy Pumps]
-                KNX --> ModernHVAC[Modern HVAC Equipment]
-                DALI --> EMS[Energy Management Suite]
-            end
-
-            %% Local System Connects to Cloud Services
-            LocalSystem --> CloudServices
-
-            %% Cloud Services Section
-            subgraph CloudServices
-                direction LR
-                DataProcessing --> MQTTBroker[MQTT Broker]
-                MQTTBroker --> AWSIoT[AWS IoT Core]
-                MQTTBroker --> AWSLambda[AWS Lambda]
-                MQTTBroker --> S3[Amazon S3]
-                MQTTBroker --> DynamoDB[DynamoDB]
-            end
-
-            %% Monitoring and Alarming Section
-            subgraph MonitoringAndAlarming
-                direction TB
-                EquipmentMonitoring[Equipment Status Monitoring] --> Alarming[Alarming Notifier]
-                Alarming --> OnCallNotifications[Oncall Notifications via SMS, Email]
-                EquipmentMonitoring --> FacilityManagers[Facility Managers]
-                Alarming --> ServiceTechsAlarming[Service Techs]
-                Alarming --> MaintenanceManagersAlarming[Maintenance Managers]
-            end
-
-            %% Servicing and Repair Block
-            subgraph ServicingRepair
-                direction TB
-                Servicing[Servicing/Repair of Equipment] --> PD
-                Servicing --> CM
-            end
-
-            %% Apply Styles
-            classDef lightGrey fill:#F0F0F0,stroke:#333;
-            classDef orangeHighlight stroke:#EF8800,stroke-width:2px,font-weight:bold;
-            classDef tealHighlight fill:#00A8A8,stroke:#000,font-weight:bold,color:#000;
-
-            %% Assign Styles to Specific Blocks
-            class ControlAutomationTeam tealHighlight;
-            class AJS,CM,PD,RealVNC,Firewall,VPN,InfluxDB,NodeRed,Grafana,Prometheus,Automata,IoTSensors,TempSensors,LegacyHVAC,Boilers,SensorsAndEquipment,SensorData,MQTTBroker,AWSIoT,AWSLambda,S3,DynamoDB,EquipmentMonitoring,Alarming,OnCallNotifications,FacilityManagers,ServiceTechsAlarming,MaintenanceManagersAlarming lightGrey;
-
-            %% Connections Style
-            class AJS,CM,SM,Dispatch,Techs,RealVNC,Firewall,VPN,InfluxDB,NodeRed,Grafana,Prometheus,MQTTBroker,AWSIoT,AWSLambda,S3,DynamoDB orangeHighlight;
+        %% Connections Style
+        class AJS,CM,SM,Dispatch,Techs,RealVNC,Firewall,VPN,InfluxDB,NodeRed,Grafana,Prometheus,MQTTBroker,AWSIoT,AWSLambda,S3,DynamoDB orangeHighlight;
         </pre>
     </div>
 
