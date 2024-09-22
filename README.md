@@ -130,38 +130,6 @@ The Automata Building Automation Controller ensures compliance with corporate go
 2. **Energy Sustainability**: Reduces carbon footprint through efficient building system operations.
 3. **Compliance with EH&S Standards**: Complies with OSHA and EPA guidelines for building health and safety.
 
----
-
-## System Flowchart
-
-```mermaid
-graph TD
-    A[Central Control Unit - Raspberry Pi 4B] -->|Manages| B(MQTT Broker)
-    B -->|Transmits Data| C[IoT Sensors]
-    B -->|Controls| D[Variable Frequency Drives (VFDs)]
-    A --> E[Cloud Integration - AWS IoT Core]
-    A -->|Integrates| F[Building Management System (BMS)]
-    E --> G[AWS Lambda - Serverless Compute]
-    E --> H[Amazon S3 - Data Storage]
-    F -->|Communicates| B
-    C -->|Sends Data| I[Occupancy Sensors]
-    C -->|Sends Data| J[Temperature Sensors]
-    C -->|Sends Data| K[CO2 Sensors]
-    D -->|Controls| L[HVAC Motors/Fans]
-    H -->|Stores| M[Operational Data for Compliance]
-    G -->|Processes| N[Real-time Data for Optimization]
-    F -->|Integrates| O[Corporate IT Systems]
-    G -->|Triggers Alerts| P[Predictive Maintenance Insights]
-    O -->|Compliance Reports| M
-    N -->|Feeds Into| Q[Model Predictive Control (MPC)]
-    Q -->|Adapts| R[Adaptive PID Loops]
-    R -->|Controls| D
-    R -->|Adapts to Data| C
-    F -->|Manual Override| S[Facility Director Control]
-```
-
----
-
 ## Technical Specifications
 
 ### Central Control Unit
