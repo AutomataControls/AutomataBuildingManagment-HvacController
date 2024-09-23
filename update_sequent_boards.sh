@@ -1,5 +1,21 @@
 #!/bin/bash
 
+# Step 0: Stop Node-RED system service and Node-RED runtime if running
+
+# Check if Node-RED service is running and stop it
+if systemctl is-active --quiet nodered; then
+    echo "Stopping Node-RED service..."
+    sudo systemctl stop nodered
+fi
+
+# Run node-red-stop to ensure Node-RED stops completely
+if command -v node-red-stop &> /dev/null; then
+    echo "Stopping Node-RED runtime..."
+    node-red-stop
+else
+    echo "node-red-stop command not found, skipping..."
+fi
+
 # Define paths for each Sequent board update folder
 BOARDS=(
     "/home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi/update"
@@ -26,13 +42,12 @@ for BOARD_PATH in "${BOARDS[@]}"; do
     fi
 done
 
-# Prompt for reboot using a custom color scheme dialog box
+# Prompt for reboot using a Zenity dialog box (removed custom color schemes to avoid issues)
 DIALOG_TITLE="Sequent Microsystems Update"
 DIALOG_TEXT="All Sequent Microsystems boards have been updated successfully. Do you want to reboot now?"
-ICON_PATH="/home/Automata/AutomataBuildingManagment-HvacController/FullLogo.png"
 
 # Display the dialog box
-zenity --question --title="$DIALOG_TITLE" --text="$DIALOG_TEXT" --width=400 --height=300 --ok-label="Reboot Now" --cancel-label="Later" --window-icon="$ICON_PATH"
+zenity --question --title="$DIALOG_TITLE" --text="$DIALOG_TEXT" --width=400 --height=300 --ok-label="Reboot Now" --cancel-label="Later"
 
 # Check user's choice
 if [ $? -eq 0 ]; then
