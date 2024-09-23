@@ -97,17 +97,10 @@ else
     echo "SequentMSInstall.sh not found, skipping..."
 fi
 
-# Step 9: First reboot after Node-RED and driver installation
-echo "First reboot to complete Node-RED and driver installation..."
-sudo reboot now
-
-# Wait for the system to reboot and resume the script
-sleep 30
-
-# Step 10: Update all Sequent Microsystems boards with ./update 0 after reboot
+# Step 9: Update Sequent Microsystems boards with ./update 0 after installation
 echo "Updating Sequent Microsystems boards with ./update 0..."
 
-# Update each board after reboot
+# Update each board
 cd /home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi
 sudo ./update 0 || { echo "Board update for megabas failed. Check logs."; exit 1; }
 
@@ -123,14 +116,7 @@ sudo ./update 0 || { echo "Board update for 16relind failed. Check logs."; exit 
 cd /home/Automata/AutomataBuildingManagment-HvacController/8relind-rpi
 sudo ./update 0 || { echo "Board update for 8relind failed. Check logs."; exit 1; }
 
-# Step 11: Second reboot after board updates
-echo "Second reboot after board updates..."
-sudo reboot now
-
-# Wait for the system to reboot and resume the script
-sleep 30
-
-# Step 12: Show success dialog box after second reboot
-zenity --info --width=400 --height=300 --text="You have successfully installed and updated Automata Control System Components, including all Sequent Microsystems boards. A realm of automation awaits!" --title="Installation Complete" --window-icon="$LOGO_PATH" --ok-label="Finish"
+# Step 10: Show success dialog box after updates
+zenity --info --width=400 --height=300 --text="You have successfully installed and updated Automata Control System Components, including Sequent Microsystems boards. A realm of automation awaits!" --title="Installation Complete" --window-icon="$LOGO_PATH" --ok-label="Finish"
 
 echo "Installation and board updates completed successfully."
