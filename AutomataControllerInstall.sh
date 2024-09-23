@@ -24,16 +24,15 @@ echo "Setting system clock and adjusting for Eastern Standard Time (EST)..."
 sudo timedatectl set-timezone America/New_York  # Eastern Standard Time
 run_script "set_internet_time_rpi4.sh"
 
-# Step 4: Set FullLogo.png as desktop wallpaper and splash screen as the 'Automata' user
+# Step 4: Install feh and set FullLogo.png as desktop wallpaper and splash screen as the 'Automata' user
+echo "Installing feh..."
+sudo apt-get install -y feh
+
 LOGO_PATH="/home/Automata/AutomataBuildingManagment-HvacController/FullLogo.png"
 
 if [ -f "$LOGO_PATH" ]; then
     echo "Setting logo as wallpaper and splash screen..."
-
-    # Set the wallpaper using 'feh'
     sudo -u Automata feh --bg-scale "$LOGO_PATH" || echo "Warning: Could not set wallpaper."
-
-    # Set the logo as the splash screen
     sudo cp "$LOGO_PATH" /usr/share/plymouth/themes/pix/splash.png
     echo "Logo set successfully."
 else
@@ -50,6 +49,7 @@ export DEBIAN_FRONTEND=noninteractive
 sudo apt-get install -y mosquitto mosquitto-clients
 
 # Add Mosquitto user and password in non-interactive mode
+sudo touch /etc/mosquitto/passwd
 echo "Setting up Mosquitto password for user Automata..."
 sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2
 
@@ -66,9 +66,11 @@ sudo systemctl restart mosquitto || echo "Warning: Mosquitto service failed to s
 # Step 6: Increase the swap size to 2048 MB
 run_script "increase_swap_size.sh"
 
-# Step 7: Install/update Node-RED and enable the service
+# Step 7: Install Node-RED using the recommended method
 echo "Installing Node-RED..."
-sudo apt-get install -y nodered  # Automatic 'y' for confirmation
+bash <(curl -sL https://nodered.org/setup.sh)
+
+# Enable and start Node-RED
 sudo systemctl enable nodered
 sudo systemctl start nodered || echo "Warning: Node-RED service failed to start. Check logs."
 
@@ -76,7 +78,6 @@ sudo systemctl start nodered || echo "Warning: Node-RED service failed to start.
 if [ -f "/home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh" ]; then
     echo "Running SequentMSInstall.sh..."
 
-    # Install repositories in the AutomataBuildingManagment-HvacController directory
     git clone https://github.com/SequentMicrosystems/megabas-rpi.git /home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi
     cd /home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi && sudo make install
 
@@ -97,34 +98,14 @@ fi
 
 # Step 9: Enable I2C, SPI, VNC, 1-Wire, Remote GPIO, and SSH; disable serial port
 echo "Enabling I2C, SPI, VNC, 1-Wire, Remote GPIO, and SSH; disabling serial port..."
-
-# Enable I2C
 sudo raspi-config nonint do_i2c 0
-echo "I2C enabled."
-
-# Enable SPI
 sudo raspi-config nonint do_spi 0
-echo "SPI enabled."
-
-# Enable VNC
 sudo raspi-config nonint do_vnc 0
-echo "VNC enabled."
-
-# Enable 1-Wire
 sudo raspi-config nonint do_onewire 0
-echo "1-Wire enabled."
-
-# Enable Remote GPIO
 sudo raspi-config nonint do_rgpio 0
-echo "Remote GPIO enabled."
-
-# Enable SSH
 sudo raspi-config nonint do_ssh 0
-echo "SSH enabled."
-
-# Disable Serial Port
 sudo raspi-config nonint do_serial 1
-echo "Serial port disabled."
+echo "All interfaces configured."
 
 # Step 10: Create a desktop icon to launch Chromium to Node-RED and UI
 DESKTOP_FILE="/home/Automata/Desktop/NodeRed.desktop"
@@ -138,12 +119,11 @@ echo "Terminal=false" >> "$DESKTOP_FILE"
 echo "Type=Application" >> "$DESKTOP_FILE"
 echo "Categories=Utility;Application;" >> "$DESKTOP_FILE"
 
-# Make the desktop file executable
 chmod +x "$DESKTOP_FILE"
 echo "Desktop icon created at $DESKTOP_FILE."
 
 # Step 11: Show success dialog box
-zenity --info --width=400 --height=300 --text="You have successfully Installed Automata Control System Components: A Realm of Automation Awaits!" --title="Installation Complete" --window-icon="$LOGO_PATH" --ok-label="Reboot Now" --cancel-label="Later"
+zenity --info --width=400 --height=300 --text="You have successfully Installed Automata Control System Components: A Realm of Automation Awaits!" --title="Installation Complete" --window-icon="$LOGO_PATH" --ok-label="Reboot Now"
 
 # Ask the user if they want to reboot now
 if [ $? = 0 ]; then
@@ -152,4 +132,3 @@ if [ $? = 0 ]; then
 else
     echo "Reboot canceled."
 fi
-
