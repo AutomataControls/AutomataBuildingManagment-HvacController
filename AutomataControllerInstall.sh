@@ -27,87 +27,26 @@ fi
 
 sudo rm -f /etc/mosquitto/passwd || echo "No previous Mosquitto password file to remove"
 
-# Remove the installation step file if it exists
-INSTALLATION_STEP_FILE="/home/Automata/installation_step.txt"
-if [ -f "$INSTALLATION_STEP_FILE" ]; then
-    sudo rm "$INSTALLATION_STEP_FILE"
-    echo "Previous installation step file removed."
-fi
-
-# Remove any existing logs if they exist
-if [ -f "$LOGFILE" ]; then
-    sudo rm "$LOGFILE"
-    echo "Previous installation log file removed."
-fi
-
-# Function to save the installation step
-save_step() {
-    echo "$1" > "$INSTALLATION_STEP_FILE"
-}
-
-# Function to run a script and handle errors
-run_script() {
-    sudo bash "$1" || { echo "Error: $1 failed, continuing..."; }
-}
+ Commenting out some steps to prevent potential issues
+ echo "Skipping enabling hardware interfaces for now to avoid conflicts..."
+ sudo raspi-config nonint do_i2c 0
+ sudo raspi-config nonint do_spi 0
+ sudo raspi-config nonint do_vnc 0
+ sudo raspi-config nonint do_onewire 0
+ sudo raspi-config nonint do_rgpio 0
+ sudo raspi-config nonint do_serial 1
 
 # Step 1: Set executable permissions for all files in the cloned repository
 echo "Setting executable permissions for all scripts in the repository..."
 sudo chmod -R +x /home/Automata/AutomataBuildingManagment-HvacController/*.sh
 echo "Permissions set for all .sh files."
 
-# Step 2: Set system clock to local internet time and correct timezone (disabled NTP for now)
-echo "Skipping NTP setup due to conflicts, manually set the timezone..."
+# Step 2: Set system clock to local internet time and correct timezone
+echo "Skipping NTP setup, manually setting the timezone..."
 sudo timedatectl set-timezone America/New_York  # Set timezone to EST
 echo "System timezone set to Eastern Standard Time (EST)."
 
-# Step 3: Set FullLogo.png as desktop wallpaper and splash screen as the 'Automata' user
-LOGO_PATH="/home/Automata/AutomataBuildingManagment-HvacController/FullLogo.png"
-if [ -f "$LOGO_PATH" ]; then
-    echo "Setting logo as wallpaper and splash screen..."
-    sudo -u Automata feh --bg-scale "$LOGO_PATH" || echo "Warning: Could not set wallpaper."
-    sudo cp "$LOGO_PATH" /usr/share/plymouth/themes/pix/splash.png
-    echo "Logo set successfully."
-else
-    echo "Error: $LOGO_PATH not found. Please place FullLogo.png in the correct directory."
-fi
-
-# Step 4: Change the desktop background to FullLogo.png
-echo "Changing the desktop background to FullLogo.png..."
-if [ -f "$LOGO_PATH" ]; then
-    sudo pcmanfm --set-wallpaper="$LOGO_PATH"
-    echo "Desktop background set to FullLogo.png."
-else
-    echo "Error: $LOGO_PATH not found for setting desktop background."
-fi
-
-# Step 5: Enable I2C, SPI, RealVNC, 1-Wire, Remote GPIO, and disable serial port
-echo "Enabling I2C, SPI, RealVNC, 1-Wire, Remote GPIO, and disabling serial port..."
-
-# Enable I2C
-sudo raspi-config nonint do_i2c 0
-echo "I2C enabled."
-
-# Enable SPI
-sudo raspi-config nonint do_spi 0
-echo "SPI enabled."
-
-# Enable VNC
-sudo raspi-config nonint do_vnc 0
-echo "RealVNC enabled."
-
-# Enable 1-Wire
-sudo raspi-config nonint do_onewire 0
-echo "1-Wire enabled."
-
-# Enable Remote GPIO
-sudo raspi-config nonint do_rgpio 0
-echo "Remote GPIO enabled."
-
-# Disable Serial Port
-sudo raspi-config nonint do_serial 1
-echo "Serial port disabled."
-
-# Step 6: Install Mosquitto but do not start the service until after reboot
+# Step 3: Install Mosquitto but do not start the service until after reboot
 echo "Installing Mosquitto..."
 export DEBIAN_FRONTEND=noninteractive
 sudo apt-get install -y mosquitto mosquitto-clients
@@ -120,11 +59,13 @@ password_file /etc/mosquitto/passwd
 per_listener_settings true" | sudo tee /etc/mosquitto/mosquitto.conf
 echo "Mosquitto installed but service will not be started until after reboot."
 
-# Step 7: Increase the swap size to 2048 MB
-echo "Increasing swap size..."
-run_script "increase_swap_size.sh"
+# Step 4: Increase the swap size to 2048 MB
+# Commenting this out to prevent any swap-related issues
+# echo "Increasing swap size..."
+# run_script "increase_swap_size.sh"
+# echo "Swap size increased."
 
-# Step 8: Install Node-RED non-interactively and prevent prompts
+# Step 5: Install Node-RED non-interactively and prevent prompts
 echo "Running install_node_red.sh to install Node-RED non-interactively..."
 sudo -u Automata bash << 'EOF'
 #!/bin/bash
@@ -141,60 +82,16 @@ sudo systemctl start nodered.service || echo "Warning: Node-RED service failed t
 echo "Node-RED has been installed or updated, and the service is now enabled to start on boot."
 EOF
 
-# Step 9: Run SequentMSInstall.sh to install Sequent Microsystems drivers
-if [ -f "/home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh" ]; then
-    echo "Running SequentMSInstall.sh to install Sequent Microsystems drivers..."
-    run_script "/home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh"
-else
-    echo "Error: SequentMSInstall.sh not found."
-fi
+# Step 6: Adding post-reboot process (can disable for debugging)
+echo "Skipping post-reboot updates temporarily to test boot process..."
 
-# Step 10: Add post-reboot process for stopping services and updating Sequent boards
-echo "Adding post-reboot process to stop services and update Sequent boards..."
-sudo tee /etc/rc.local > /dev/null << 'EOF'
-#!/bin/bash
+# Comment out the /etc/rc.local updates to prevent issues
+# sudo tee /etc/rc.local > /dev/null << 'EOF'
 # Post-reboot script to stop services, update boards, and reboot again
-
-# Prevent boot loop by checking if update process is completed
-if [ -f "/var/run/board_updates_completed" ]; then
-    exit 0
-fi
-
-# Stop Node-RED and Mosquitto services if running
-if systemctl is-active --quiet nodered; then
-    sudo systemctl stop nodered
-fi
-if systemctl is-active --quiet mosquitto; then
-    sudo systemctl stop mosquitto
-fi
-
-# Stop Node-RED from the command line
-node-red-stop
-
-# Update Sequent Microsystems boards
-cd /home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi/update
-sudo ./update 0
-cd /home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi/update
-sudo ./update 0
-cd /home/Automata/AutomataBuildingManagment-HvacController/16univin-rpi/update
-sudo ./update 0
-cd /home/Automata/AutomataBuildingManagment-HvacController/16relind-rpi/update
-sudo ./update 0
-cd /home/Automata/AutomataBuildingManagment-HvacController/8relind-rpi/update
-sudo ./update 0
-
-# Mark the update process as completed
-touch /var/run/board_updates_completed
-
-# Enable services and complete reboot
-sudo systemctl enable nodered
-sudo systemctl enable mosquitto
-sudo reboot
-EOF
-sudo chmod +x /etc/rc.local
+# EOF
+# sudo chmod +x /etc/rc.local
 
 # Final message
 echo "Installation completed. The system will reboot in 10 seconds to finalize the process."
 sleep 10
 sudo reboot
-
