@@ -28,9 +28,13 @@ sudo systemctl stop nodered
 sudo systemctl disable nodered
 sudo apt-get remove --purge -y nodered
 
-# Step 4: Remove Sequent Microsystems drivers
+# Step 4: Remove Sequent Microsystems drivers (Skip errors)
 echo "Removing Sequent Microsystems drivers..."
-run_command "SequentMSUninstall.sh"
+if [ -f "SequentMSUninstall.sh" ]; then
+    run_command "./SequentMSUninstall.sh"
+else
+    echo "SequentMSUninstall.sh not found, skipping..."
+fi
 
 # Step 5: Disable I2C, SPI, VNC, 1-Wire, Remote GPIO, and SSH; re-enable serial port
 echo "Disabling I2C, SPI, VNC, 1-Wire, Remote GPIO, and SSH, and enabling serial port..."
@@ -72,6 +76,24 @@ else
     echo "Node-RED desktop icon not found, skipping..."
 fi
 
-# Step 7: Reboot the system to finalize uninstallation
+# Step 7: Remove the cloned repository directory
+REPO_DIR="/home/Automata/AutomataBuildingManagment-HvacController"
+if [ -d "$REPO_DIR" ]; then
+    echo "Removing cloned repository directory..."
+    sudo rm -rf "$REPO_DIR"
+else
+    echo "Repository directory not found, skipping..."
+fi
+
+# Step 8: Remove the install step file from /home/Automata
+INSTALL_STEP_FILE="/home/Automata/install_step_file"  # Update with actual step file name
+if [ -f "$INSTALL_STEP_FILE" ]; then
+    echo "Removing install step file..."
+    rm "$INSTALL_STEP_FILE"
+else
+    echo "Install step file not found, skipping..."
+fi
+
+# Step 9: Reboot the system to finalize uninstallation
 echo "Rebooting the system now..."
 sudo reboot
