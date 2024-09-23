@@ -20,9 +20,12 @@ else
     exit 1
 fi
 
-# Relaunch the script in the detected terminal
-$TERMINAL -e "bash $0" &
-exit 0
+# Relaunch the script in the detected terminal and wait for it to finish
+if [ -z "$LXTERMINAL_STARTED" ]; then
+    LXTERMINAL_STARTED=1 $TERMINAL -e "bash -c 'LXTERMINAL_STARTED=1 bash $0'" &
+    wait
+    exit 0
+fi
 
 # ----------------------- Remaining Script Logic Starts Here -----------------------
 
@@ -159,4 +162,3 @@ sudo chmod +x /etc/rc.local
 echo "Installation completed. The system will reboot in 10 seconds."
 sleep 10
 sudo reboot
-
