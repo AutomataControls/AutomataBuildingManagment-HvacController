@@ -15,12 +15,25 @@ run_script() {
     sudo bash "$1" || { echo "Error: $1 failed, continuing..."; }
 }
 
-# Step 2: Set system clock to local internet time and correct timezone
+# Step 2: Check if dpkg is in a broken state
+echo "Checking for any dpkg interruptions..."
+if sudo dpkg --audit; then
+    echo "dpkg is in a consistent state."
+else
+    echo "dpkg is broken. Attempting to fix..."
+    sudo dpkg --configure -a
+    if [ $? -ne 0 ]; then
+        echo "Failed to fix dpkg. Please resolve manually."
+        exit 1
+    fi
+fi
+
+# Step 3: Set system clock to local internet time and correct timezone
 echo "Setting system clock and adjusting for Eastern Standard Time (EST)..."
 sudo timedatectl set-timezone America/New_York  # Eastern Standard Time
 run_script "set_internet_time_rpi4.sh"
 
-# Step 3: Set FullLogo.png as desktop wallpaper and splash screen as the 'Automata' user
+# Step 4: Set FullLogo.png as desktop wallpaper and splash screen as the 'Automata' user
 LOGO_PATH="/home/Automata/AutomataBuildingManagment-HvacController/FullLogo.png"
 
 if [ -f "$LOGO_PATH" ]; then
@@ -36,7 +49,7 @@ else
     echo "Error: $LOGO_PATH not found. Please place FullLogo.png in the correct directory."
 fi
 
-# Step 4: Install Mosquitto and configure user authentication
+# Step 5: Install Mosquitto and configure user authentication
 echo "Installing Mosquitto and setting up user authentication..."
 
 # Set DEBIAN_FRONTEND to noninteractive to avoid prompts during package installation
@@ -57,25 +70,25 @@ per_listener_settings true" | sudo tee /etc/mosquitto/mosquitto.conf
 
 # Enable and restart Mosquitto service
 sudo systemctl enable mosquitto
-sudo systemctl restart mosquitto
+sudo systemctl restart mosquitto || echo "Warning: Mosquitto service failed to start. Check logs."
 
-# Step 5: Increase the swap size to 2048 MB
+# Step 6: Increase the swap size to 2048 MB
 run_script "increase_swap_size.sh"
 
-# Step 6: Install/update Node-RED and enable the service
+# Step 7: Install/update Node-RED and enable the service
 echo "Installing Node-RED..."
 sudo apt-get install -y nodered  # Automatic 'y' for confirmation
 sudo systemctl enable nodered
-sudo systemctl start nodered
+sudo systemctl start nodered || echo "Warning: Node-RED service failed to start. Check logs."
 
-# Step 7: Run SequentMSInstall.sh to install Sequent Microsystems drivers
+# Step 8: Run SequentMSInstall.sh to install Sequent Microsystems drivers
 if [ -f "SequentMSInstall.sh" ]; then
     run_script "SequentMSInstall.sh"
 else
     echo "SequentMSInstall.sh not found, skipping..."
 fi
 
-# Step 8: Enable I2C, SPI, VNC, 1-Wire, Remote GPIO, and SSH; disable serial port
+# Step 9: Enable I2C, SPI, VNC, 1-Wire, Remote GPIO, and SSH; disable serial port
 echo "Enabling I2C, SPI, VNC, 1-Wire, Remote GPIO, and SSH; disabling serial port..."
 
 # Enable I2C
@@ -106,7 +119,7 @@ echo "SSH enabled."
 sudo raspi-config nonint do_serial 1
 echo "Serial port disabled."
 
-# Step 9: Create a desktop icon to launch Chromium to Node-RED and UI
+# Step 10: Create a desktop icon to launch Chromium to Node-RED and UI
 DESKTOP_FILE="/home/Automata/Desktop/NodeRed.desktop"
 echo "[Desktop Entry]" > "$DESKTOP_FILE"
 echo "Version=1.0" >> "$DESKTOP_FILE"
@@ -122,6 +135,6 @@ echo "Categories=Utility;Application;" >> "$DESKTOP_FILE"
 chmod +x "$DESKTOP_FILE"
 echo "Desktop icon created at $DESKTOP_FILE."
 
-# Step 10: Reboot the system to apply all changes
+# Step 11: Reboot the system to apply all changes
 echo "Rebooting the system now..."
 sudo reboot
