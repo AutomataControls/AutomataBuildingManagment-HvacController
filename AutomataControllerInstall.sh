@@ -119,45 +119,6 @@ sudo systemctl start nodered.service || echo "Warning: Node-RED service failed t
 echo "Node-RED has been installed or updated, and the service is now enabled to start on boot."
 EOF
 
-# Step 12: Add post-reboot update for SequentMS boards
-echo "Adding post-reboot process to stop services and update SequentMS boards..."
-sudo tee /etc/rc.local > /dev/null << 'EOF'
-#!/bin/bash
-if [ -f "/var/run/board_updates_completed" ]; then
-    exit 0
-fi
-
-# Stop Node-RED and Mosquitto services if running
-if systemctl is-active --quiet nodered; then
-    sudo systemctl stop nodered
-fi
-if systemctl is-active --quiet mosquitto; then
-    sudo systemctl stop mosquitto
-fi
-node-red-stop
-
-# Update Sequent Microsystems boards
-cd /home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi/update
-sudo ./update 0
-cd /home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi/update
-sudo ./update 0
-cd /home/Automata/AutomataBuildingManagment-HvacController/16univin-rpi/update
-sudo ./update 0
-cd /home/Automata/AutomataBuildingManagment-HvacController/16relind-rpi/update
-sudo ./update 0
-cd /home/Automata/AutomataBuildingManagment-HvacController/8relind-rpi/update
-sudo ./update 0
-
-# Mark the update process as completed
-touch /var/run/board_updates_completed
-
-# Enable services and reboot again
-sudo systemctl enable nodered
-sudo systemctl enable mosquitto
-sudo reboot
-EOF
-sudo chmod +x /etc/rc.local
-
 # Final message before reboot
 echo "Installation completed. The system will reboot in 10 seconds."
 sleep 10
