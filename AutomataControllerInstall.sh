@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # Log file setup
@@ -67,10 +66,10 @@ sudo systemctl restart mosquitto || echo "Warning: Mosquitto service failed to s
 # Step 6: Increase the swap size to 2048 MB
 run_script "increase_swap_size.sh"
 
-# Step 7: Run install_node_red.sh to install or update Node-RED
+# Step 7: Run install_node_red.sh to install or update Node-RED as Automata user
 if [ -f "/home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh" ]; then
-    echo "Running install_node_red.sh to install or update Node-RED..."
-    run_script "/home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh"
+    echo "Running install_node_red.sh to install or update Node-RED as Automata user..."
+    sudo -u Automata bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh
 else
     echo "Error: install_node_red.sh not found. Please place the script in the correct directory."
 fi
@@ -79,6 +78,7 @@ fi
 if [ -f "/home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh" ]; then
     echo "Running SequentMSInstall.sh..."
 
+    # Install multiple Sequent Microsystems repositories
     git clone https://github.com/SequentMicrosystems/megabas-rpi.git /home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi
     cd /home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi && sudo make install
 
@@ -97,39 +97,40 @@ else
     echo "SequentMSInstall.sh not found, skipping..."
 fi
 
-# Step 9: Enable I2C, SPI, VNC, 1-Wire, Remote GPIO, and SSH; disable serial port
-echo "Enabling I2C, SPI, VNC, 1-Wire, Remote GPIO, and SSH; disabling serial port..."
-sudo raspi-config nonint do_i2c 0
-sudo raspi-config nonint do_spi 0
-sudo raspi-config nonint do_vnc 0
-sudo raspi-config nonint do_onewire 0
-sudo raspi-config nonint do_rgpio 0
-sudo raspi-config nonint do_ssh 0
-sudo raspi-config nonint do_serial 1
-echo "All interfaces configured."
+# Step 9: First reboot after Node-RED and driver installation
+echo "First reboot to complete Node-RED and driver installation..."
+sudo reboot now
 
-# Step 10: Create a desktop icon to launch Chromium to Node-RED and UI
-DESKTOP_FILE="/home/Automata/Desktop/NodeRed.desktop"
-echo "[Desktop Entry]" > "$DESKTOP_FILE"
-echo "Version=1.0" >> "$DESKTOP_FILE"
-echo "Name=Node-RED Dashboard" >> "$DESKTOP_FILE"
-echo "Comment=Open Node-RED in Chromium" >> "$DESKTOP_FILE"
-echo "Exec=chromium-browser --new-window http://127.0.0.1:1880/ http://127.0.0.1:1880/ui" >> "$DESKTOP_FILE"
-echo "Icon=chromium" >> "$DESKTOP_FILE"
-echo "Terminal=false" >> "$DESKTOP_FILE"
-echo "Type=Application" >> "$DESKTOP_FILE"
-echo "Categories=Utility;Application;" >> "$DESKTOP_FILE"
+# Wait for the system to reboot and resume the script
+sleep 30
 
-chmod +x "$DESKTOP_FILE"
-echo "Desktop icon created at $DESKTOP_FILE."
+# Step 10: Update all Sequent Microsystems boards with ./update 0 after reboot
+echo "Updating Sequent Microsystems boards with ./update 0..."
 
-# Step 11: Show success dialog box
-zenity --info --width=400 --height=300 --text="You have successfully Installed Automata Control System Components: A Realm of Automation Awaits!" --title="Installation Complete" --window-icon="$LOGO_PATH" --ok-label="Reboot Now"
+# Update each board after reboot
+cd /home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi
+sudo ./update 0 || { echo "Board update for megabas failed. Check logs."; exit 1; }
 
-# Ask the user if they want to reboot now
-if [ $? = 0 ]; then
-    echo "Rebooting the system now..."
-    sudo reboot
-else
-    echo "Reboot canceled."
-fi
+cd /home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi
+sudo ./update 0 || { echo "Board update for megaind failed. Check logs."; exit 1; }
+
+cd /home/Automata/AutomataBuildingManagment-HvacController/16univin-rpi
+sudo ./update 0 || { echo "Board update for 16univin failed. Check logs."; exit 1; }
+
+cd /home/Automata/AutomataBuildingManagment-HvacController/16relind-rpi
+sudo ./update 0 || { echo "Board update for 16relind failed. Check logs."; exit 1; }
+
+cd /home/Automata/AutomataBuildingManagment-HvacController/8relind-rpi
+sudo ./update 0 || { echo "Board update for 8relind failed. Check logs."; exit 1; }
+
+# Step 11: Second reboot after board updates
+echo "Second reboot after board updates..."
+sudo reboot now
+
+# Wait for the system to reboot and resume the script
+sleep 30
+
+# Step 12: Show success dialog box after second reboot
+zenity --info --width=400 --height=300 --text="You have successfully installed and updated Automata Control System Components, including all Sequent Microsystems boards. A realm of automation awaits!" --title="Installation Complete" --window-icon="$LOGO_PATH" --ok-label="Finish"
+
+echo "Installation and board updates completed successfully."
