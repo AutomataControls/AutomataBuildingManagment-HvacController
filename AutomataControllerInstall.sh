@@ -7,10 +7,24 @@ echo "Installation started at: $(date)"
 
 # Step 0: Cleanup previous installation attempts and stop services
 echo "Stopping and disabling conflicting services..."
-sudo systemctl stop ntp || echo "NTP service was not running"
-sudo systemctl disable ntp || echo "NTP service was not enabled"
-sudo systemctl stop mosquitto || echo "Mosquitto service was not running"
-sudo systemctl disable mosquitto || echo "Mosquitto service was not enabled"
+
+# Stop services only if they exist and are running
+if systemctl is-active --quiet nodered; then
+    sudo systemctl stop nodered
+fi
+
+if systemctl is-active --quiet mosquitto; then
+    sudo systemctl stop mosquitto
+fi
+
+if systemctl is-enabled --quiet nodered; then
+    sudo systemctl disable nodered
+fi
+
+if systemctl is-enabled --quiet mosquitto; then
+    sudo systemctl disable mosquitto
+fi
+
 sudo rm -f /etc/mosquitto/passwd || echo "No previous Mosquitto password file to remove"
 
 # Remove the installation step file if it exists
@@ -141,6 +155,11 @@ sudo tee /etc/rc.local > /dev/null << 'EOF'
 #!/bin/bash
 # Post-reboot script to stop services, update boards, and reboot again
 
+# Prevent boot loop by checking if update process is completed
+if [ -f "/var/run/board_updates_completed" ]; then
+    exit 0
+fi
+
 # Stop Node-RED and Mosquitto services
 sudo systemctl stop nodered
 sudo systemctl stop mosquitto
@@ -158,7 +177,10 @@ sudo ./update 0
 cd /home/Automata/AutomataBuildingManagment-HvacController/8relind-rpi/update
 sudo ./update 0
 
-# Reboot again with services enabled
+# Mark the update process as completed
+touch /var/run/board_updates_completed
+
+# Enable services again and reboot
 sudo systemctl enable nodered
 sudo systemctl enable mosquitto
 sudo reboot
