@@ -57,7 +57,16 @@ else
     echo "Error: $LOGO_PATH not found. Please place FullLogo.png in the correct directory."
 fi
 
-# Step 4: Install Mosquitto but do not start the service until after reboot
+# Step 4: Change the desktop background to FullLogo.png
+echo "Changing the desktop background to FullLogo.png..."
+if [ -f "$LOGO_PATH" ]; then
+    sudo pcmanfm --set-wallpaper="$LOGO_PATH"
+    echo "Desktop background set to FullLogo.png."
+else
+    echo "Error: $LOGO_PATH not found for setting desktop background."
+fi
+
+# Step 5: Install Mosquitto but do not start the service until after reboot
 echo "Installing Mosquitto..."
 export DEBIAN_FRONTEND=noninteractive
 sudo apt-get install -y mosquitto mosquitto-clients
@@ -70,15 +79,28 @@ password_file /etc/mosquitto/passwd
 per_listener_settings true" | sudo tee /etc/mosquitto/mosquitto.conf
 echo "Mosquitto installed but service will not be started until after reboot."
 
-# Step 5: Increase the swap size to 2048 MB
+# Step 6: Increase the swap size to 2048 MB
 echo "Increasing swap size..."
 run_script "increase_swap_size.sh"
 
-# Step 6: Install Node-RED non-interactively and prevent prompts
+# Step 7: Install Node-RED non-interactively and prevent prompts
 echo "Running install_node_red.sh to install Node-RED non-interactively..."
-sudo -u Automata bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh --confirm-install --node20
+sudo -u Automata bash << 'EOF'
+#!/bin/bash
 
-# Step 7: Run SequentMSInstall.sh to install Sequent Microsystems drivers
+# Install or update Node.js and Node-RED non-interactively
+bash <(curl -sL https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered) --confirm-install --confirm-pi --node20
+
+# Enable Node-RED service to start on boot
+sudo systemctl enable nodered.service
+
+# Start Node-RED service immediately
+sudo systemctl start nodered.service || echo "Warning: Node-RED service failed to start. Check logs."
+
+echo "Node-RED has been installed or updated, and the service is now enabled to start on boot."
+EOF
+
+# Step 8: Run SequentMSInstall.sh to install Sequent Microsystems drivers
 if [ -f "/home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh" ]; then
     echo "Running SequentMSInstall.sh to install Sequent Microsystems drivers..."
     run_script "/home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh"
@@ -86,20 +108,37 @@ else
     echo "Error: SequentMSInstall.sh not found."
 fi
 
-# Step 8: Create a desktop icon to launch Chromium to Node-RED and UI
-DESKTOP_FILE="/home/Automata/Desktop/NodeRed.desktop"
-echo "[Desktop Entry]" > "$DESKTOP_FILE"
-echo "Version=1.0" >> "$DESKTOP_FILE"
-echo "Name=Node-RED Dashboard" >> "$DESKTOP_FILE"
-echo "Comment=Open Node-RED in Chromium" >> "$DESKTOP_FILE"
-echo "Exec=chromium-browser --new-window http://127.0.0.1:1880/ http://127.0.0.1:1880/ui" >> "$DESKTOP_FILE"
-echo "Icon=chromium" >> "$DESKTOP_FILE"
-echo "Terminal=false" >> "$DESKTOP_FILE"
-echo "Type=Application" >> "$DESKTOP_FILE"
-echo "Categories=Utility;Application;" >> "$DESKTOP_FILE"
+# Step 9: Add post-reboot process for killing services and updating Sequent boards
+echo "Adding post-reboot process to stop services and update Sequent boards..."
+sudo tee /etc/rc.local > /dev/null << 'EOF'
+#!/bin/bash
+# Post-reboot script to stop services, update boards, and reboot again
 
-chmod +x "$DESKTOP_FILE"
-echo "Desktop icon created at $DESKTOP_FILE."
+# Stop Node-RED and Mosquitto services
+sudo systemctl stop nodered
+sudo systemctl stop mosquitto
+node-red-stop
+
+# Update Sequent Microsystems boards
+cd /home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi/update
+sudo ./update 0
+cd /home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi/update
+sudo ./update 0
+cd /home/Automata/AutomataBuildingManagment-HvacController/16univin-rpi/update
+sudo ./update 0
+cd /home/Automata/AutomataBuildingManagment-HvacController/16relind-rpi/update
+sudo ./update 0
+cd /home/Automata/AutomataBuildingManagment-HvacController/8relind-rpi/update
+sudo ./update 0
+
+# Reboot again with services enabled
+sudo systemctl enable nodered
+sudo systemctl enable mosquitto
+sudo reboot
+EOF
+sudo chmod +x /etc/rc.local
 
 # Final message
-echo "Installation completed. Please reboot the system to finalize the process."
+echo "Installation completed. The system will reboot in 10 seconds to finalize the process."
+sleep 10
+sudo reboot
