@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Ensure the script is running as root
+if [ "$EUID" -ne 0 ]; then
+    echo "Please run as root. Re-running with sudo..."
+    sudo bash "$0" "$@"
+    exit
+fi
+
 # Log file setup
 LOGFILE="/home/Automata/install_log.txt"
 exec > >(tee -i "$LOGFILE") 2>&1
@@ -102,22 +109,15 @@ per_listener_settings true" | sudo tee /etc/mosquitto/mosquitto.conf
 echo "Increasing swap size..."
 run_script "increase_swap_size.sh"
 
-# Step 11: Install Node-RED non-interactively
-echo "Running install_node_red.sh to install Node-RED non-interactively..."
-sudo -u Automata bash << 'EOF'
-#!/bin/bash
-
-# Install or update Node.js and Node-RED non-interactively
-bash <(curl -sL https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered) --confirm-install --confirm-pi --node20
+# Step 11: Traditional Node-RED installation with prompts
+echo "Installing Node-RED using traditional method with prompts..."
+bash <(curl -sL https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered)
 
 # Enable Node-RED service to start on boot
 sudo systemctl enable nodered.service
 
 # Start Node-RED service immediately
 sudo systemctl start nodered.service || echo "Warning: Node-RED service failed to start. Check logs."
-
-echo "Node-RED has been installed or updated, and the service is now enabled to start on boot."
-EOF
 
 # Final message before reboot
 echo "Installation completed. The system will reboot in 10 seconds."
