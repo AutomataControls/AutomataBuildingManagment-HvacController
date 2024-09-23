@@ -1,5 +1,21 @@
 #!/bin/bash
 
+# Step 0: Stop Node-RED system service and Node-RED runtime if running
+
+# Check if Node-RED service is running and stop it
+if systemctl is-active --quiet nodered; then
+    echo "Stopping Node-RED service..."
+    sudo systemctl stop nodered
+fi
+
+# Run node-red-stop to ensure Node-RED stops completely
+if command -v node-red-stop &> /dev/null; then
+    echo "Stopping Node-RED runtime..."
+    node-red-stop
+else
+    echo "node-red-stop command not found, skipping..."
+fi
+
 # Step 1: Install Sequent Microsystems repositories and compile them
 echo "Installing Sequent Microsystems drivers..."
 
