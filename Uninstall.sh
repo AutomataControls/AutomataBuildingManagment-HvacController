@@ -1,14 +1,17 @@
 #!/bin/bash
 
+# Log file setup
+LOGFILE="/home/Automata/uninstall_log.txt"
+exec > >(tee -i "$LOGFILE") 2>&1
+echo "Uninstallation started at: $(date)"
+
 # Function to run a command and handle errors
 run_command() {
     sudo bash -c "$1" || { echo "Error: $1 failed, continuing..."; }
 }
 
-echo "Starting uninstallation process..."
-
-# Step 1: Disable and remove Mosquitto service and user credentials
-echo "Disabling and removing Mosquitto..."
+# Step 1: Stop and remove Mosquitto service and user credentials
+echo "Stopping and removing Mosquitto..."
 sudo systemctl stop mosquitto
 sudo systemctl disable mosquitto
 sudo apt-get remove --purge -y mosquitto mosquitto-clients
@@ -30,14 +33,33 @@ sudo apt-get remove --purge -y nodered
 
 # Step 4: Remove Sequent Microsystems drivers (Skip errors)
 echo "Removing Sequent Microsystems drivers..."
-if [ -f "SequentMSUninstall.sh" ]; then
-    run_command "./SequentMSUninstall.sh"
-else
-    echo "SequentMSUninstall.sh not found, skipping..."
+if [ -d "/home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi" ]; then
+    cd /home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi
+    sudo make uninstall || echo "Error: Uninstall failed for megabas-rpi"
 fi
 
-# Step 5: Disable I2C, SPI, VNC, 1-Wire, Remote GPIO, and SSH; re-enable serial port
-echo "Disabling I2C, SPI, VNC, 1-Wire, Remote GPIO, and SSH, and enabling serial port..."
+if [ -d "/home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi" ]; then
+    cd /home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi
+    sudo make uninstall || echo "Error: Uninstall failed for megaind-rpi"
+fi
+
+if [ -d "/home/Automata/AutomataBuildingManagment-HvacController/16univin-rpi" ]; then
+    cd /home/Automata/AutomataBuildingManagment-HvacController/16univin-rpi
+    sudo make uninstall || echo "Error: Uninstall failed for 16univin-rpi"
+fi
+
+if [ -d "/home/Automata/AutomataBuildingManagment-HvacController/16relind-rpi" ]; then
+    cd /home/Automata/AutomataBuildingManagment-HvacController/16relind-rpi
+    sudo make uninstall || echo "Error: Uninstall failed for 16relind-rpi"
+fi
+
+if [ -d "/home/Automata/AutomataBuildingManagment-HvacController/8relind-rpi" ]; then
+    cd /home/Automata/AutomataBuildingManagment-HvacController/8relind-rpi
+    sudo make uninstall || echo "Error: Uninstall failed for 8relind-rpi"
+fi
+
+# Step 5: Disable I2C, SPI, VNC, 1-Wire, Remote GPIO, and SSH; re-enable the serial port
+echo "Disabling I2C, SPI, VNC, 1-Wire, Remote GPIO, and SSH, and enabling the serial port..."
 
 # Disable I2C
 sudo raspi-config nonint do_i2c 1
@@ -67,7 +89,7 @@ echo "SSH disabled."
 sudo raspi-config nonint do_serial 0
 echo "Serial port enabled."
 
-# Step 6: Remove desktop icon for Node-RED
+# Step 6: Remove the desktop icon for Node-RED
 DESKTOP_FILE="/home/Automata/Desktop/NodeRed.desktop"
 if [ -f "$DESKTOP_FILE" ]; then
     echo "Removing Node-RED desktop icon..."
@@ -85,16 +107,7 @@ else
     echo "Repository directory not found, skipping..."
 fi
 
-# Step 8: Remove the install step file from /home/Automata
-INSTALL_STEP_FILE="/home/Automata/install_step_file"  # Update with actual step file name
-if [ -f "$INSTALL_STEP_FILE" ]; then
-    echo "Removing install step file..."
-    rm "$INSTALL_STEP_FILE"
-else
-    echo "Install step file not found, skipping..."
-fi
-
-# Step 9: Display a dialog box for successful uninstallation and reboot prompt
+# Step 8: Display a dialog box for successful uninstallation and reboot prompt
 echo "Displaying uninstallation success dialog..."
 whiptail --title "Uninstallation Complete" --msgbox "Uninstall of Automata BMS Successful" 8 50
 
