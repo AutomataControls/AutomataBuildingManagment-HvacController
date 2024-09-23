@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # Log file setup
@@ -66,13 +67,13 @@ sudo systemctl restart mosquitto || echo "Warning: Mosquitto service failed to s
 # Step 6: Increase the swap size to 2048 MB
 run_script "increase_swap_size.sh"
 
-# Step 7: Install Node-RED using the recommended method
-echo "Installing Node-RED..."
-bash <(curl -sL https://nodered.org/setup.sh)
-
-# Enable and start Node-RED
-sudo systemctl enable nodered
-sudo systemctl start nodered || echo "Warning: Node-RED service failed to start. Check logs."
+# Step 7: Run install_node_red.sh to install or update Node-RED
+if [ -f "/home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh" ]; then
+    echo "Running install_node_red.sh to install or update Node-RED..."
+    run_script "/home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh"
+else
+    echo "Error: install_node_red.sh not found. Please place the script in the correct directory."
+fi
 
 # Step 8: Run SequentMSInstall.sh to install Sequent Microsystems drivers
 if [ -f "/home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh" ]; then
