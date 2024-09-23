@@ -66,7 +66,34 @@ else
     echo "Error: $LOGO_PATH not found for setting desktop background."
 fi
 
-# Step 5: Install Mosquitto but do not start the service until after reboot
+# Step 5: Enable I2C, SPI, RealVNC, 1-Wire, Remote GPIO, and disable serial port
+echo "Enabling I2C, SPI, RealVNC, 1-Wire, Remote GPIO, and disabling serial port..."
+
+# Enable I2C
+sudo raspi-config nonint do_i2c 0
+echo "I2C enabled."
+
+# Enable SPI
+sudo raspi-config nonint do_spi 0
+echo "SPI enabled."
+
+# Enable VNC
+sudo raspi-config nonint do_vnc 0
+echo "RealVNC enabled."
+
+# Enable 1-Wire
+sudo raspi-config nonint do_onewire 0
+echo "1-Wire enabled."
+
+# Enable Remote GPIO
+sudo raspi-config nonint do_rgpio 0
+echo "Remote GPIO enabled."
+
+# Disable Serial Port
+sudo raspi-config nonint do_serial 1
+echo "Serial port disabled."
+
+# Step 6: Install Mosquitto but do not start the service until after reboot
 echo "Installing Mosquitto..."
 export DEBIAN_FRONTEND=noninteractive
 sudo apt-get install -y mosquitto mosquitto-clients
@@ -79,11 +106,11 @@ password_file /etc/mosquitto/passwd
 per_listener_settings true" | sudo tee /etc/mosquitto/mosquitto.conf
 echo "Mosquitto installed but service will not be started until after reboot."
 
-# Step 6: Increase the swap size to 2048 MB
+# Step 7: Increase the swap size to 2048 MB
 echo "Increasing swap size..."
 run_script "increase_swap_size.sh"
 
-# Step 7: Install Node-RED non-interactively and prevent prompts
+# Step 8: Install Node-RED non-interactively and prevent prompts
 echo "Running install_node_red.sh to install Node-RED non-interactively..."
 sudo -u Automata bash << 'EOF'
 #!/bin/bash
@@ -100,7 +127,7 @@ sudo systemctl start nodered.service || echo "Warning: Node-RED service failed t
 echo "Node-RED has been installed or updated, and the service is now enabled to start on boot."
 EOF
 
-# Step 8: Run SequentMSInstall.sh to install Sequent Microsystems drivers
+# Step 9: Run SequentMSInstall.sh to install Sequent Microsystems drivers
 if [ -f "/home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh" ]; then
     echo "Running SequentMSInstall.sh to install Sequent Microsystems drivers..."
     run_script "/home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh"
@@ -108,7 +135,7 @@ else
     echo "Error: SequentMSInstall.sh not found."
 fi
 
-# Step 9: Add post-reboot process for killing services and updating Sequent boards
+# Step 10: Add post-reboot process for killing services and updating Sequent boards
 echo "Adding post-reboot process to stop services and update Sequent boards..."
 sudo tee /etc/rc.local > /dev/null << 'EOF'
 #!/bin/bash
