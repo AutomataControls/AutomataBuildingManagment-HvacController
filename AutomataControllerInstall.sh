@@ -20,13 +20,14 @@ echo "Setting system clock and adjusting for Eastern Standard Time (EST)..."
 sudo timedatectl set-timezone America/New_York  # Eastern Standard Time
 run_script "set_internet_time_rpi4.sh"
 
-# Step 3: Set FullLogo.png as desktop wallpaper and splash screen
+# Step 3: Set FullLogo.png as desktop wallpaper and splash screen as the 'Automata' user
 LOGO_PATH="/home/Automata/AutomataBuildingManagment-HvacController/FullLogo.png"
+
 if [ -f "$LOGO_PATH" ]; then
     echo "Setting logo as wallpaper and splash screen..."
-    
-    # Set the logo as the wallpaper
-    sudo pcmanfm --set-wallpaper "$LOGO_PATH"
+
+    # Set the wallpaper and splash screen as the logged-in user (Automata)
+    sudo -u Automata pcmanfm --set-wallpaper "$LOGO_PATH" || echo "Warning: Could not set wallpaper. Desktop manager may not be active."
     
     # Set the logo as the splash screen
     sudo cp "$LOGO_PATH" /usr/share/plymouth/themes/pix/splash.png
@@ -124,4 +125,3 @@ echo "Desktop icon created at $DESKTOP_FILE."
 # Step 10: Reboot the system to apply all changes
 echo "Rebooting the system now..."
 sudo reboot
-
