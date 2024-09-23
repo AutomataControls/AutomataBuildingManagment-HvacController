@@ -149,7 +149,7 @@ else
     echo "Error: SequentMSInstall.sh not found."
 fi
 
-# Step 10: Add post-reboot process for killing services and updating Sequent boards
+# Step 10: Add post-reboot process for stopping services and updating Sequent boards
 echo "Adding post-reboot process to stop services and update Sequent boards..."
 sudo tee /etc/rc.local > /dev/null << 'EOF'
 #!/bin/bash
@@ -160,9 +160,15 @@ if [ -f "/var/run/board_updates_completed" ]; then
     exit 0
 fi
 
-# Stop Node-RED and Mosquitto services
-sudo systemctl stop nodered
-sudo systemctl stop mosquitto
+# Stop Node-RED and Mosquitto services if running
+if systemctl is-active --quiet nodered; then
+    sudo systemctl stop nodered
+fi
+if systemctl is-active --quiet mosquitto; then
+    sudo systemctl stop mosquitto
+fi
+
+# Stop Node-RED from the command line
 node-red-stop
 
 # Update Sequent Microsystems boards
@@ -180,7 +186,7 @@ sudo ./update 0
 # Mark the update process as completed
 touch /var/run/board_updates_completed
 
-# Enable services again and reboot
+# Enable services and complete reboot
 sudo systemctl enable nodered
 sudo systemctl enable mosquitto
 sudo reboot
@@ -191,3 +197,4 @@ sudo chmod +x /etc/rc.local
 echo "Installation completed. The system will reboot in 10 seconds to finalize the process."
 sleep 10
 sudo reboot
+
