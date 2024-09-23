@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Log file setup
+LOGFILE="/home/Automata/install_log.txt"
+exec > >(tee -i "$LOGFILE") 2>&1
+echo "Installation started at: $(date)"
+
 # Step 1: Set executable permissions for all files in the cloned repository
 echo "Setting executable permissions for all scripts in the repository..."
 sudo chmod -R +x /home/Automata/AutomataBuildingManagment-HvacController/*.sh
@@ -15,11 +20,17 @@ echo "Setting system clock and adjusting for Eastern Standard Time (EST)..."
 sudo timedatectl set-timezone America/New_York  # Eastern Standard Time
 run_script "set_internet_time_rpi4.sh"
 
-# Step 3: Set FullLogo.png as desktop and splash screen
+# Step 3: Set FullLogo.png as desktop wallpaper and splash screen
 LOGO_PATH="/home/Automata/AutomataBuildingManagment-HvacController/FullLogo.png"
 if [ -f "$LOGO_PATH" ]; then
-    echo "Setting logo image..."
-    sudo cp "$LOGO_PATH" /root/FullLogo.png
+    echo "Setting logo as wallpaper and splash screen..."
+    
+    # Set the logo as the wallpaper
+    sudo pcmanfm --set-wallpaper "$LOGO_PATH"
+    
+    # Set the logo as the splash screen
+    sudo cp "$LOGO_PATH" /usr/share/plymouth/themes/pix/splash.png
+    echo "Logo set successfully."
 else
     echo "Error: $LOGO_PATH not found. Please place FullLogo.png in the correct directory."
 fi
@@ -113,3 +124,4 @@ echo "Desktop icon created at $DESKTOP_FILE."
 # Step 10: Reboot the system to apply all changes
 echo "Rebooting the system now..."
 sudo reboot
+
