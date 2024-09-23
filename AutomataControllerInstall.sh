@@ -15,18 +15,9 @@ run_script() {
     sudo bash "$1" || { echo "Error: $1 failed, continuing..."; }
 }
 
-# Step 2: Check if dpkg is in a broken state
-echo "Checking for any dpkg interruptions..."
-if sudo dpkg --audit; then
-    echo "dpkg is in a consistent state."
-else
-    echo "dpkg is broken. Attempting to fix..."
-    sudo dpkg --configure -a
-    if [ $? -ne 0 ]; then
-        echo "Failed to fix dpkg. Please resolve manually."
-        exit 1
-    fi
-fi
+# Step 2: Install Zenity for dialog boxes
+echo "Installing Zenity..."
+sudo apt-get install -y zenity
 
 # Step 3: Set system clock to local internet time and correct timezone
 echo "Setting system clock and adjusting for Eastern Standard Time (EST)..."
@@ -39,9 +30,9 @@ LOGO_PATH="/home/Automata/AutomataBuildingManagment-HvacController/FullLogo.png"
 if [ -f "$LOGO_PATH" ]; then
     echo "Setting logo as wallpaper and splash screen..."
 
-    # Set the wallpaper and splash screen as the logged-in user (Automata)
-    sudo -u Automata pcmanfm --set-wallpaper "$LOGO_PATH" || echo "Warning: Could not set wallpaper. Desktop manager may not be active."
-    
+    # Set the wallpaper using 'feh'
+    sudo -u Automata feh --bg-scale "$LOGO_PATH" || echo "Warning: Could not set wallpaper."
+
     # Set the logo as the splash screen
     sudo cp "$LOGO_PATH" /usr/share/plymouth/themes/pix/splash.png
     echo "Logo set successfully."
@@ -82,24 +73,24 @@ sudo systemctl enable nodered
 sudo systemctl start nodered || echo "Warning: Node-RED service failed to start. Check logs."
 
 # Step 8: Run SequentMSInstall.sh to install Sequent Microsystems drivers
-if [ -f "SequentMSInstall.sh" ]; then
+if [ -f "/home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh" ]; then
     echo "Running SequentMSInstall.sh..."
 
-    # Fix incorrect paths to /home/Automata for various repositories
-    git clone https://github.com/SequentMicrosystems/megabas-rpi.git /home/Automata/megabas-rpi
-    cd /home/Automata/megabas-rpi && make install
+    # Install repositories in the AutomataBuildingManagment-HvacController directory
+    git clone https://github.com/SequentMicrosystems/megabas-rpi.git /home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi
+    cd /home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi && sudo make install
 
-    git clone https://github.com/SequentMicrosystems/megaind-rpi.git /home/Automata/megaind-rpi
-    cd /home/Automata/megaind-rpi && make install
+    git clone https://github.com/SequentMicrosystems/megaind-rpi.git /home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi
+    cd /home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi && sudo make install
 
-    git clone https://github.com/SequentMicrosystems/16univin-rpi.git /home/Automata/16univin-rpi
-    cd /home/Automata/16univin-rpi && make install
+    git clone https://github.com/SequentMicrosystems/16univin-rpi.git /home/Automata/AutomataBuildingManagment-HvacController/16univin-rpi
+    cd /home/Automata/AutomataBuildingManagment-HvacController/16univin-rpi && sudo make install
 
-    git clone https://github.com/SequentMicrosystems/16relind-rpi.git /home/Automata/16relind-rpi
-    cd /home/Automata/16relind-rpi && make install
+    git clone https://github.com/SequentMicrosystems/16relind-rpi.git /home/Automata/AutomataBuildingManagment-HvacController/16relind-rpi
+    cd /home/Automata/AutomataBuildingManagment-HvacController/16relind-rpi && sudo make install
 
-    git clone https://github.com/SequentMicrosystems/8relind-rpi.git /home/Automata/8relind-rpi
-    cd /home/Automata/8relind-rpi && make install
+    git clone https://github.com/SequentMicrosystems/8relind-rpi.git /home/Automata/AutomataBuildingManagment-HvacController/8relind-rpi
+    cd /home/Automata/AutomataBuildingManagment-HvacController/8relind-rpi && sudo make install
 else
     echo "SequentMSInstall.sh not found, skipping..."
 fi
@@ -151,6 +142,14 @@ echo "Categories=Utility;Application;" >> "$DESKTOP_FILE"
 chmod +x "$DESKTOP_FILE"
 echo "Desktop icon created at $DESKTOP_FILE."
 
-# Step 11: Reboot the system to apply all changes
-echo "Rebooting the system now..."
-sudo reboot
+# Step 11: Show success dialog box
+zenity --info --width=400 --height=300 --text="You have successfully Installed Automata Control System Components: A Realm of Automation Awaits!" --title="Installation Complete" --window-icon="$LOGO_PATH" --ok-label="Reboot Now" --cancel-label="Later"
+
+# Ask the user if they want to reboot now
+if [ $? = 0 ]; then
+    echo "Rebooting the system now..."
+    sudo reboot
+else
+    echo "Reboot canceled."
+fi
+
