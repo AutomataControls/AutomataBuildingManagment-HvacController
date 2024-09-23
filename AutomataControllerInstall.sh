@@ -83,7 +83,23 @@ sudo systemctl start nodered || echo "Warning: Node-RED service failed to start.
 
 # Step 8: Run SequentMSInstall.sh to install Sequent Microsystems drivers
 if [ -f "SequentMSInstall.sh" ]; then
-    run_script "SequentMSInstall.sh"
+    echo "Running SequentMSInstall.sh..."
+
+    # Fix incorrect paths to /home/Automata for various repositories
+    git clone https://github.com/SequentMicrosystems/megabas-rpi.git /home/Automata/megabas-rpi
+    cd /home/Automata/megabas-rpi && make install
+
+    git clone https://github.com/SequentMicrosystems/megaind-rpi.git /home/Automata/megaind-rpi
+    cd /home/Automata/megaind-rpi && make install
+
+    git clone https://github.com/SequentMicrosystems/16univin-rpi.git /home/Automata/16univin-rpi
+    cd /home/Automata/16univin-rpi && make install
+
+    git clone https://github.com/SequentMicrosystems/16relind-rpi.git /home/Automata/16relind-rpi
+    cd /home/Automata/16relind-rpi && make install
+
+    git clone https://github.com/SequentMicrosystems/8relind-rpi.git /home/Automata/8relind-rpi
+    cd /home/Automata/8relind-rpi && make install
 else
     echo "SequentMSInstall.sh not found, skipping..."
 fi
