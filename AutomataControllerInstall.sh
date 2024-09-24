@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # Ensure the script is running as root
@@ -127,6 +126,25 @@ bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPalle
 # Step 13: Add Chromium auto-start script from repository
 echo "Adding Chromium auto-start script..."
 sudo chmod +x /home/Automata/AutomataBuildingManagment-HvacController/InstallChromiumAutoStart.sh
+
+# Create the Chromium launch script to ensure it's not running in kiosk mode
+cat << 'EOF' > /home/Automata/AutomataBuildingManagment-HvacController/InstallChromiumAutoStart.sh
+#!/bin/bash
+
+# Wait for the network to be connected
+while ! ping -c 1 127.0.0.1 &>/dev/null; do
+    sleep 1
+done
+
+# Wait for an additional 10 seconds after network connection
+sleep 10
+
+# Launch Chromium in windowed mode (not full-screen or kiosk mode)
+chromium-browser --no-sandbox --new-window http://127.0.0.1:1880/ http://127.0.0.1:1880/ui &
+EOF
+
+# Make the Chromium launch script executable
+chmod +x /home/Automata/AutomataBuildingManagment-HvacController/InstallChromiumAutoStart.sh
 
 # Run the Chromium auto-start script
 /home/Automata/AutomataBuildingManagment-HvacController/InstallChromiumAutoStart.sh
