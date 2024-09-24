@@ -123,36 +123,12 @@ sudo systemctl start nodered.service || echo "Warning: Node-RED service failed t
 echo "Installing additional Node-RED palette items..."
 sudo npm install -g node-red-contrib-bme280 node-red-contrib-bme280-rpi
 
-# Step 13: Create script to launch Chromium after network connection
-echo "Creating Chromium launch script..."
-cat << 'EOF' > /home/Automata/launch_chromium.sh
-#!/bin/bash
+# Step 13: Add Chromium auto-start script from repository
+echo "Adding Chromium auto-start script..."
+sudo chmod +x /home/Automata/AutomataBuildingManagment-HvacController/InstallChromiumAutoStart.sh
 
-# Wait for the network to be connected
-while ! ping -c 1 127.0.0.1 &>/dev/null; do
-    sleep 1
-done
-
-# Wait for an additional 10 seconds after network connection
-sleep 10
-
-# Launch Chromium with two tabs
-chromium-browser http://127.0.0.1:1880/ http://127.0.0.1:1880/ui
-EOF
-
-# Make the script executable
-chmod +x /home/Automata/launch_chromium.sh
-
-# Add the script to autostart for the current user
-AUTOSTART_FILE="/home/Automata/.config/lxsession/LXDE-pi/autostart"
-
-# Ensure the autostart directory exists
-mkdir -p $(dirname "$AUTOSTART_FILE")
-
-# Add the launch script to autostart
-if ! grep -q 'launch_chromium.sh' "$AUTOSTART_FILE"; then
-    echo "@/home/Automata/launch_chromium.sh" >> "$AUTOSTART_FILE"
-fi
+# Run the Chromium auto-start script
+/home/Automata/AutomataBuildingManagment-HvacController/InstallChromiumAutoStart.sh
 
 # Final message before reboot
 echo "Installation completed. The system will reboot in 10 seconds."
