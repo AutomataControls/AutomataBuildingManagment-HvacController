@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # Ensure the script is running as root
@@ -119,9 +120,9 @@ sudo systemctl enable nodered.service
 # Start Node-RED service immediately
 sudo systemctl start nodered.service || echo "Warning: Node-RED service failed to start. Check logs."
 
-# Step 12: Install additional Node-RED palette items
-echo "Installing additional Node-RED palette items..."
-sudo npm install -g node-red-contrib-bme280 node-red-contrib-bme280-rpi
+# Step 12: Run InstallNodeRedPallete.sh to install Node-RED nodes and themes
+echo "Running InstallNodeRedPallete.sh to install Node-RED nodes and themes..."
+bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh
 
 # Step 13: Add Chromium auto-start script from repository
 echo "Adding Chromium auto-start script..."
@@ -129,6 +130,27 @@ sudo chmod +x /home/Automata/AutomataBuildingManagment-HvacController/InstallChr
 
 # Run the Chromium auto-start script
 /home/Automata/AutomataBuildingManagment-HvacController/InstallChromiumAutoStart.sh
+
+# Step 14: Create one-time autostart entry for update_sequent_boards.sh
+echo "Creating one-time autostart entry for update_sequent_boards.sh..."
+cat << 'EOF' > /home/Automata/update_sequent_boards.sh
+#!/bin/bash
+
+# Run the update script
+/home/Automata/AutomataBuildingManagment-HvacController/update_sequent_boards.sh
+
+# Remove this script from autostart to only run once
+AUTOSTART_FILE="/home/Automata/.config/lxsession/LXDE-pi/autostart"
+sed -i '/update_sequent_boards.sh/d' "$AUTOSTART_FILE"
+EOF
+
+# Make it executable
+chmod +x /home/Automata/update_sequent_boards.sh
+
+# Add to autostart
+if ! grep -q 'update_sequent_boards.sh' "/home/Automata/.config/lxsession/LXDE-pi/autostart"; then
+    echo "@/home/Automata/update_sequent_boards.sh" >> "/home/Automata/.config/lxsession/LXDE-pi/autostart"
+fi
 
 # Final message before reboot
 echo "Installation completed. The system will reboot in 10 seconds."
