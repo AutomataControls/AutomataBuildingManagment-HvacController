@@ -76,7 +76,7 @@ echo "Skipping NTP setup, manually setting the timezone..."
 sudo timedatectl set-timezone America/New_York
 
 # Step 7: Set FullLogo.png as desktop wallpaper and splash screen
-LOGO_PATH="/home/Automata/AutomataBuildingManagment-HvacController/FullLogo.png"
+LOGO_PATH="/home/Automata/FullLogo.png"
 if [ -f "$LOGO_PATH" ]; then
     echo "Setting logo as wallpaper and splash screen..."
     sudo -u Automata DISPLAY=:0 pcmanfm --set-wallpaper="$LOGO_PATH" || echo "Warning: Could not set wallpaper."
@@ -119,7 +119,7 @@ sudo systemctl enable nodered.service
 # Start Node-RED service immediately
 sudo systemctl start nodered.service || echo "Warning: Node-RED service failed to start. Check logs."
 
-# Install additional Node-RED palette items
+# Step 12: Install additional Node-RED palette items
 echo "Installing additional Node-RED palette items..."
 bash /home/Automata/InstallNodeRedPallete.sh
 
