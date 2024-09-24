@@ -119,6 +119,10 @@ sudo systemctl enable nodered.service
 # Start Node-RED service immediately
 sudo systemctl start nodered.service || echo "Warning: Node-RED service failed to start. Check logs."
 
+# Install additional Node-RED palette items
+echo "Installing additional Node-RED palette items..."
+bash /home/Automata/InstallNodeRedPallete.sh
+
 # Final message before reboot
 echo "Installation completed. The system will reboot in 10 seconds."
 sleep 10
