@@ -18,8 +18,12 @@ npm install -g node-red-contrib-ui-led \
                node-red-contrib-bme280 \
                node-red-node-aws
 
+# Install Node-RED themes
+npm install -g @node-red-contrib-themes/dark \
+               @node-red-contrib-themes/oled
+
 # Restart Node-RED
 echo "Restarting Node-RED..."
 sudo systemctl restart nodered
 
-echo "Node-RED nodes installed successfully."
+echo "Node-RED nodes and themes installed successfully."
