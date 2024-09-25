@@ -102,9 +102,8 @@ def run_installation_steps():
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh", 9, total_steps, "Increasing swap size...")
     sleep(5)
 
-    # Step 10: Ensure autostart directory exists and add auto-start entry
+    # Step 10: Create the desktop icon for updating SMBoards
     run_shell_command("mkdir -p /home/Automata/.config/lxsession/LXDE-pi && echo '@/home/Automata/update_sequent_boards.sh' >> /home/Automata/.config/lxsession/LXDE-pi/autostart", 10, total_steps, "Ensuring autostart directory exists and adding board update auto-start...")
-    sleep(5)
 
     # Step 11: Installation complete
     update_progress(11, total_steps, "Installation complete. Please reboot.")
@@ -146,7 +145,27 @@ root.mainloop()
 EOF
 
 # Step 4: Start the Tkinter GUI in the background
-sleep 15  # Ensures that desktop and GUI are fully loaded
 python3 $INSTALL_GUI &
+
+# Installation steps as before
+
+# Step 10: Create the desktop icon for updating SMBoards
+echo "Creating desktop icon for updating SMBoards..."
+DESKTOP_FILE="/home/Automata/Desktop/Update_SMBoards.desktop"
+cat << 'EOF' > $DESKTOP_FILE
+[Desktop Entry]
+Name=Click to Update SMBoards
+Comment=Runs the SMBoards update script with a progress GUI
+Exec=/home/Automata/update_sequent_boards.sh
+Icon=utilities-terminal
+Terminal=false
+Type=Application
+EOF
+
+# Set permissions
+chmod +x $DESKTOP_FILE
+
+# Step 11: Installation complete
+echo "Installation complete. Please reboot."
 
 
