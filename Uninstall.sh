@@ -53,7 +53,10 @@ def update_progress(step, total_steps, message):
 # Function to run shell commands in a separate thread
 def run_shell_command(command, step, total_steps, message):
     update_progress(step, total_steps, message)
-    subprocess.Popen(command, shell=True).wait()
+    result = subprocess.Popen(command, shell=True).wait()
+    if result != 0:
+        status_label.config(text=f"Error during: {message}. Check logs for details.")
+        root.update_idletasks()
 
 def run_uninstallation_steps():
     total_steps = 7
