@@ -77,7 +77,7 @@ def run_installation_steps():
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/InstallChromiumAutoStart.sh", 3, total_steps, "Setting up temporary Chromium auto-start...")
 
     # Step 4: Set FullLogo.png as wallpaper and splash screen
-    run_shell_command("sudo mv /home/Automata/AutomataBuildingManagment-HvacController/FullLogo.png /home/Automata/FullLogo.png && sudo -u Automata DISPLAY=:0 pcmanfm --set-wallpaper='/home/Automata/FullLogo.png' && sudo cp /home/Automata/FullLogo.png /usr/share/plymouth/themes/pix/splash.png", 4, total_steps, "Setting wallpaper and splash screen...")
+    run_shell_command("sudo -u Automata DISPLAY=:0 pcmanfm --desktop & sleep 5 && sudo -u Automata DISPLAY=:0 pcmanfm --set-wallpaper='/home/Automata/FullLogo.png' && sudo cp /home/Automata/FullLogo.png /usr/share/plymouth/themes/pix/splash.png", 4, total_steps, "Setting wallpaper and splash screen...")
 
     # Step 5: Enable I2C, SPI, RealVNC, 1-Wire, disable serial port
     run_shell_command("sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_serial 1", 5, total_steps, "Enabling I2C, SPI, RealVNC, disabling serial port...")
@@ -145,11 +145,14 @@ done
 # Wait for an additional 10 seconds after network connection
 sleep 10
 
-# Launch Chromium with two tabs
-chromium-browser http://127.0.0.1:1880/ http://127.0.0.1:1880/ui
-
-# Reload desktop environment after closing Chromium
+# Ensure the desktop environment is running
 pcmanfm --desktop &
+
+# Launch Chromium in windowed mode (not full-screen or kiosk mode)
+chromium-browser --new-window http://127.0.0.1:1880/ http://127.0.0.1:1880/ui &
+
+# Keep the script running to prevent the session from closing
+wait
 EOF
 
 # Make the script executable
