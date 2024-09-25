@@ -92,8 +92,20 @@ def run_installation_steps():
     # Step 9: Increase swap size
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh", 9, total_steps, "Increasing swap size...")
 
-    # Step 10: Ensure autostart directory exists and add auto-start entry
-    run_shell_command("mkdir -p /home/Automata/.config/lxsession/LXDE-pi && echo '@/home/Automata/update_sequent_boards.sh' >> /home/Automata/.config/lxsession/LXDE-pi/autostart", 10, total_steps, "Ensuring autostart directory exists and adding board update auto-start...")
+    # Step 10: Ensure autostart directory exists and add auto-start entry with error handling
+    autostart_dir = "/home/Automata/.config/lxsession/LXDE-pi"
+    autostart_file = f"{autostart_dir}/autostart"
+
+    run_shell_command(f"mkdir -p {autostart_dir}", 10, total_steps, "Ensuring autostart directory exists...")
+
+    try:
+        with open(autostart_file, 'a') as f:
+            f.write("@/home/Automata/update_sequent_boards.sh\n")
+        update_progress(10, total_steps, "Added update_sequent_boards.sh to autostart.")
+    except Exception as e:
+        status_label.config(text=f"Error adding to autostart: {str(e)}")
+        root.update_idletasks()
+        return
 
     # Step 11: Installation complete
     update_progress(11, total_steps, "Installation complete. Please reboot.")
@@ -136,4 +148,3 @@ EOF
 
 # Step 4: Start the Tkinter GUI in the background
 python3 $INSTALL_GUI
-
