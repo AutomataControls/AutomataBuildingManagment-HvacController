@@ -23,6 +23,7 @@ INSTALL_GUI="/home/Automata/install_progress_gui.py"
 cat << 'EOF' > $INSTALL_GUI
 import tkinter as tk
 from tkinter import ttk
+import subprocess
 
 # Create the main window
 root = tk.Tk()
@@ -50,6 +51,10 @@ def update_progress(step, total_steps, message):
     status_label.config(text=message)
     root.update_idletasks()
 
+def run_shell_command(command, step, total_steps, message):
+    update_progress(step, total_steps, message)
+    subprocess.run(command, shell=True)
+
 # Tkinter loop runs in the background while install runs
 root.mainloop()
 EOF
@@ -57,6 +62,16 @@ EOF
 # Step 5: Start the Tkinter GUI in the background
 python3 $INSTALL_GUI &
 GUI_PID=$!
+
+# Helper function to update progress and run a shell command
+run_command_with_progress() {
+    STEP=$1
+    TOTAL=$2
+    MESSAGE=$3
+    COMMAND=$4
+    update_gui $STEP $TOTAL "$MESSAGE"
+    python3 -c "import subprocess; subprocess.run('$COMMAND', shell=True)"
+}
 
 # Function to update the GUI
 update_gui() {
@@ -83,99 +98,31 @@ root.update_idletasks()
 TOTAL_STEPS=10
 
 # Step 6: Install Sequent Microsystems drivers (Progress: 1/10)
-update_gui 1 $TOTAL_STEPS "Installing Sequent Microsystems drivers..."
-echo "Installing Sequent Microsystems drivers..."
-
-# Clone and install megabas-rpi
-git clone https://github.com/SequentMicrosystems/megabas-rpi.git /home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi
-cd /home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi
-sudo make install || { echo "megabas-rpi installation failed"; exit 1; }
-
-# Clone and install megaind-rpi
-git clone https://github.com/SequentMicrosystems/megaind-rpi.git /home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi
-cd /home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi
-sudo make install || { echo "megaind-rpi installation failed"; exit 1; }
+run_command_with_progress 1 $TOTAL_STEPS "Installing Sequent Microsystems drivers..." "bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh"
 
 # Step 7: Install Node-RED and Node-RED Palettes (Progress: 2/10)
-update_gui 2 $TOTAL_STEPS "Installing Node-RED and palettes..."
-echo "Installing Node-RED and palettes..."
-
-# Install Node-RED and required nodes
-bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh
-bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh
+run_command_with_progress 2 $TOTAL_STEPS "Installing Node-RED and palettes..." "bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh && bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh"
 
 # Step 8: Set up Chromium auto-start (Progress: 3/10)
-update_gui 3 $TOTAL_STEPS "Setting up Chromium auto-start..."
-echo "Setting up Chromium auto-start..."
-
-# Add Chromium auto-start
-bash /home/Automata/AutomataBuildingManagment-HvacController/InstallChromiumAutoStart.sh
+run_command_with_progress 3 $TOTAL_STEPS "Setting up Chromium auto-start..." "bash /home/Automata/AutomataBuildingManagment-HvacController/InstallChromiumAutoStart.sh"
 
 # Step 9: Move FullLogo.png and set it as wallpaper and splash screen (Progress: 4/10)
-update_gui 4 $TOTAL_STEPS "Setting up logo as wallpaper and splash screen..."
-echo "Setting up logo as wallpaper and splash screen..."
-
-LOGO_SRC="/home/Automata/AutomataBuildingManagment-HvacController/FullLogo.png"
-LOGO_DEST="/home/Automata/FullLogo.png"
-
-if [ -f "$LOGO_SRC" ]; then
-    sudo mv "$LOGO_SRC" "$LOGO_DEST"
-    sudo -u Automata DISPLAY=:0 pcmanfm --set-wallpaper="$LOGO_DEST"
-    sudo cp "$LOGO_DEST" /usr/share/plymouth/themes/pix/splash.png
-else
-    echo "Error: FullLogo.png not found."
-fi
+run_command_with_progress 4 $TOTAL_STEPS "Setting up logo as wallpaper and splash screen..." "sudo mv /home/Automata/AutomataBuildingManagment-HvacController/FullLogo.png /home/Automata/FullLogo.png && sudo -u Automata DISPLAY=:0 pcmanfm --set-wallpaper='/home/Automata/FullLogo.png' && sudo cp /home/Automata/FullLogo.png /usr/share/plymouth/themes/pix/splash.png"
 
 # Step 10: Enable I2C, SPI, RealVNC, 1-Wire, and disable serial port (Progress: 5/10)
-update_gui 5 $TOTAL_STEPS "Enabling I2C, SPI, RealVNC, 1-Wire, disabling serial port..."
-echo "Enabling I2C, SPI, RealVNC, 1-Wire, disabling serial port..."
-
-sudo raspi-config nonint do_i2c 0
-sudo raspi-config nonint do_spi 0
-sudo raspi-config nonint do_vnc 0
-sudo raspi-config nonint do_onewire 0
-sudo raspi-config nonint do_serial 1
+run_command_with_progress 5 $TOTAL_STEPS "Enabling I2C, SPI, RealVNC, 1-Wire, disabling serial port..." "sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_serial 1"
 
 # Step 11: Install Mosquitto (Progress: 6/10)
-update_gui 6 $TOTAL_STEPS "Installing Mosquitto..."
-echo "Installing Mosquitto..."
-
-sudo apt-get install -y mosquitto mosquitto-clients
-sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2
+run_command_with_progress 6 $TOTAL_STEPS "Installing Mosquitto..." "sudo apt-get install -y mosquitto mosquitto-clients && sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2"
 
 # Step 12: Increase swap size (Progress: 7/10)
-update_gui 7 $TOTAL_STEPS "Increasing swap size..."
-echo "Increasing swap size..."
-bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh
+run_command_with_progress 7 $TOTAL_STEPS "Increasing swap size..." "bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh"
 
 # Step 13: Add board update to autostart (Progress: 8/10)
-update_gui 8 $TOTAL_STEPS "Adding board updates to autostart..."
-echo "Adding board updates to autostart..."
-
-AUTOSTART_FILE="/home/Automata/.config/lxsession/LXDE-pi/autostart"
-mkdir -p /home/Automata/.config/lxsession/LXDE-pi
-
-cat << 'EOF2' > /home/Automata/update_sequent_boards.sh
-#!/bin/bash
-BOARDS=(
-    "/home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi/update"
-    "/home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi/update"
-)
-for board in "${BOARDS[@]}"; do
-    if [ -d "$board" ]; then
-        (cd "$board" && ./update 0)
-    else
-        echo "Board directory $board not found."
-    fi
-done
-EOF2
-
-chmod +x /home/Automata/update_sequent_boards.sh
-echo "@/home/Automata/update_sequent_boards.sh" >> "$AUTOSTART_FILE"
+run_command_with_progress 8 $TOTAL_STEPS "Adding board updates to autostart..." "bash /home/Automata/update_sequent_boards.sh"
 
 # Step 14: Final step - Installation complete (Progress: 9/10)
-update_gui 9 $TOTAL_STEPS "Installation complete. Please reboot."
-echo "Installation complete. Please reboot."
+run_command_with_progress 9 $TOTAL_STEPS "Installation complete. Please reboot." ""
 
 # Step 15: Final Message for Reboot in a Tkinter GUI
 
