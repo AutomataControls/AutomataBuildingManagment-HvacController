@@ -58,25 +58,30 @@ def run_shell_command(command, step, total_steps, message):
 def run_installation_steps():
     total_steps = 12
     
-    run_shell_command("sudo raspi-config nonint do_blanking 1", 1, total_steps, "Disabling screen blanking...")
+    # Killing any lingering services before installation
+    run_shell_command("sudo systemctl stop nodered mosquitto && sudo systemctl disable nodered mosquitto", 0, total_steps, "Stopping lingering services...")
     sleep(2)
 
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_internet_time_rpi4.sh", 2, total_steps, "Setting system time...")
+    # Overclocking CPU slightly
+    run_shell_command("echo 'arm_freq=1750' | sudo tee -a /boot/config.txt", 1, total_steps, "Overclocking CPU... Turning up to 11 Meow...")
     sleep(2)
 
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh", 3, total_steps, "Installing Sequent Microsystems drivers...")
+    run_shell_command("sudo raspi-config nonint do_blanking 1", 2, total_steps, "Disabling screen blanking...")
     sleep(2)
 
-    run_shell_command("lxterminal -e 'bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh'", 4, total_steps, "Installing Node-RED interactively...")
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_internet_time_rpi4.sh", 3, total_steps, "Setting system time...")
     sleep(2)
 
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh", 5, total_steps, "Installing Node-RED palettes...")
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh", 4, total_steps, "Installing Sequent Microsystems drivers...")
     sleep(2)
 
-    run_shell_command("sudo mv /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/splash.png", 6, total_steps, "Moving splash.png...")
+    run_shell_command("lxterminal --command 'bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh'", 5, total_steps, "Installing Node-RED interactively...")
     sleep(2)
 
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_full_logo_image_rpi4.sh", 7, total_steps, "Setting splash image...")
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh", 6, total_steps, "Installing Node-RED palettes...")
+    sleep(2)
+
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_full_logo_image_rpi4.sh", 7, total_steps, "Setting boot splash image...")
     sleep(2)
 
     run_shell_command("sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_serial 1", 8, total_steps, "Configuring interfaces...")
@@ -147,6 +152,7 @@ chmod +x $INSTALL_GUI
 # Step 5: Run the GUI (only start it once)
 log "Running installation GUI..."
 sudo -u Automata DISPLAY=:0 python3 $INSTALL_GUI &
+sleep 2  # Adding a delay to prevent GUI from being started twice
 
 # Step 6: Set up Chromium Auto-launch
 log "Setting up Chromium auto-launch..."
@@ -196,46 +202,34 @@ BOARD_UPDATE_SERVICE="/etc/systemd/system/update-boards.service"
 
 cat << 'EOF' > $BOARD_UPDATE_SERVICE
 [Unit]
-Description=Update Sequent Microsystems Boards after reboot
+Description=Update Sequent Microsystems Boards
 After=network.target
 
 [Service]
 ExecStart=/home/Automata/AutomataBuildingManagment-HvacController/update_sequent_boards.sh
 User=Automata
-Environment=DISPLAY=:0
 Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-# Reload systemd and enable the service
-systemctl daemon-reload
+# Enable the board update service
 systemctl enable update-boards.service
-systemctl start update-boards.service
 
-# Check the status of the board update service
-if systemctl is-active --quiet update-boards.service; then
-    log "Board update service started successfully."
-else
-    log "Failed to start the board update service."
-    systemctl status update-boards.service | tee -a "$LOGFILE"
-fi
-
-# Step 8: Permissions for the repo and Automata files after reboot
-log "Setting permissions for files in repository after reboot..."
+# Step 8: Permissions for /home/Automata and repository files after reboot
+log "Setting permissions for files in repository and /home/Automata after reboot..."
 REPO_DIR="/home/Automata/AutomataBuildingManagment-HvacController"
-AUTOMATA_DIR="/home/Automata"
 if [ -d "$REPO_DIR" ]; then
     log "Setting permissions for files in repository directory..."
     find "$REPO_DIR" -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \;
     find "$REPO_DIR" -type f -name "*.png" -exec chmod +r {} \;
 fi
 
-if [ -d "$AUTOMATA_DIR" ]; then
-    log "Setting permissions for files in /home/Automata directory..."
-    find "$AUTOMATA_DIR" -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \;
-    find "$AUTOMATA_DIR" -type f -name "*.png" -exec chmod +r {} \;
-fi
+# Setting permissions for /home/Automata
+log "Setting permissions for files in /home/Automata..."
+find /home/Automata -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \;
+find /home/Automata -type f -name "*.png" -exec chmod +r {} \;
 
 log "Installation completed. GUI should be running. You may reboot to finalize settings."
+
