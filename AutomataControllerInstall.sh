@@ -15,7 +15,7 @@ echo "Installation started at: $(date)"
 # Step 3: Install necessary dependencies for Tkinter, Chromium, and Pillow
 echo "Installing dependencies for GUI and Chromium..."
 sudo apt-get update
-sudo apt-get install -y python3-tk python3-pil python3-pil.imagetk chromium-browser
+sudo apt-get install -y python3-tk python3-pil python3-pil.imagetk chromium-browser pcmanfm
 
 # Step 4: Create the Python GUI script for the installation progress (Start GUI earlier)
 INSTALL_GUI="/home/Automata/install_progress_gui.py"
@@ -76,7 +76,7 @@ def run_installation_steps():
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh", 4, total_steps, "Installing Node-RED palettes...")
 
     # Step 5: Set FullLogo.png as wallpaper and splash screen
-    run_shell_command("sudo -u Automata DISPLAY=:0 pcmanfm --desktop & sleep 5 && sudo -u Automata DISPLAY=:0 pcmanfm --set-wallpaper='/home/Automata/FullLogo.png' && sudo cp /home/Automata/FullLogo.png /usr/share/plymouth/themes/pix/splash.png", 5, total_steps, "Setting wallpaper and splash screen...")
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/change_logo_and_splash.sh", 5, total_steps, "Setting wallpaper and splash screen...")
 
     # Step 6: Enable I2C, SPI, RealVNC, 1-Wire, disable serial port
     run_shell_command("sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_serial 1", 6, total_steps, "Enabling I2C, SPI, RealVNC, disabling serial port...")
@@ -150,7 +150,7 @@ pcmanfm --desktop &
 # Launch Chromium in windowed mode (not full-screen or kiosk mode)
 chromium-browser --new-window http://127.0.0.1:1880/ http://127.0.0.1:1880/ui &
 
-# Keep the script running to preventsession from closing
+# Keep the script running to prevent the session from closing
 wait
 EOF
 
