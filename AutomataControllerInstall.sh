@@ -1,167 +1,154 @@
 #!/bin/bash
 
-# Step 1: Ensure the script is running as root
-if [ "$EUID" -ne 0 ]; then
-    echo "Please run as root. Re-running with sudo..."
-    sudo bash "$0" "$@"
-    exit
-fi
-
-# Step 2: Log file setup
+# Log file setup
 LOGFILE="/home/Automata/install_log.txt"
 exec > >(tee -i "$LOGFILE") 2>&1
 echo "Installation started at: $(date)"
 
-# Step 3: Install necessary dependencies for Tkinter, Chromium, and Pillow
-echo "Installing dependencies for GUI and Chromium..."
-sudo apt-get update
-sudo apt-get install -y python3-tk python3-pil python3-pil.imagetk chromium-browser
+# Step 1: Set executable permissions for all files in the cloned repository
+echo "Setting executable permissions for all scripts in the repository..."
+sudo chmod -R +x /home/Automata/AutomataBuildingManagment-HvacController/*.sh
+echo "Permissions set for all .sh files."
 
-# Step 4: Run the Internet time sync script before driver installation
-echo "Setting Internet time..."
-bash /home/Automata/AutomataBuildingManagment-HvacController/set_internet_time_rpi4.sh
+# Function to run a script and handle errors
+run_script() {
+    sudo bash "$1" || { echo "Error: $1 failed, continuing..."; }
+}
 
-# Step 5: Create the Python GUI script for the installation progress
-INSTALL_GUI="/home/Automata/install_progress_gui.py"
+# Step 2: Install Zenity for dialog boxes
+echo "Installing Zenity..."
+sudo apt-get install -y zenity
 
-cat << 'EOF' > $INSTALL_GUI
-import tkinter as tk
-from tkinter import ttk
-import subprocess
-import threading
+# Step 3: Set system clock to local internet time and correct timezone
+echo "Setting system clock and adjusting for Eastern Standard Time (EST)..."
+sudo timedatectl set-timezone America/New_York  # Eastern Standard Time
+run_script "set_internet_time_rpi4.sh"
 
-# Create the main window
-root = tk.Tk()
-root.title("Automata Installation Progress")
+# Step 4: Set FullLogo.png as desktop wallpaper and splash screen as the 'Automata' user
+LOGO_PATH="/home/Automata/AutomataBuildingManagment-HvacController/FullLogo.png"
 
-# Set window size and position
-root.geometry("600x400")
-root.configure(bg='#2e2e2e')  # Dark grey background
+if [ -f "$LOGO_PATH" ]; then
+    echo "Setting logo as wallpaper and splash screen..."
 
-# Title message
-label = tk.Label(root, text="Automata Installation Progress", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
-label.pack(pady=20)
+    # Set the wallpaper using 'feh'
+    sudo -u Automata feh --bg-scale "$LOGO_PATH" || echo "Warning: Could not set wallpaper."
 
-# Progress bar
-progress = ttk.Progressbar(root, orient="horizontal", length=500, mode="determinate")
-progress.pack(pady=20)
-
-# Status message
-status_label = tk.Label(root, text="Starting installation...", font=("Helvetica", 12), fg="orange", bg="#2e2e2e")
-status_label.pack(pady=10)
-
-# Update progress function
-def update_progress(step, total_steps, message):
-    progress['value'] = (step / total_steps) * 100
-    status_label.config(text=message)
-    root.update_idletasks()
-
-# Function to run shell commands in a separate thread
-def run_shell_command(command, step, total_steps, message):
-    update_progress(step, total_steps, message)
-    subprocess.Popen(command, shell=True).wait()
-
-def run_installation_steps():
-    total_steps = 10
-
-    # Step 1: Install Sequent Microsystems drivers
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh", 1, total_steps, "Installing Sequent Microsystems drivers...")
-
-    # Step 2: Install Node-RED and its palettes interactively in a new terminal
-    run_shell_command("lxterminal -e 'bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh'", 2, total_steps, "Installing Node-RED interactively...")
-
-    # Step 3: Set up Chromium auto-start (temporary for now)
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/InstallChromiumAutoStart.sh", 3, total_steps, "Setting up temporary Chromium auto-start...")
-
-    # Step 4: Set FullLogo.png as wallpaper and splash screen
-    run_shell_command("sudo mv /home/Automata/AutomataBuildingManagment-HvacController/FullLogo.png /home/Automata/FullLogo.png && sudo -u Automata DISPLAY=:0 pcmanfm --set-wallpaper='/home/Automata/FullLogo.png' && sudo cp /home/Automata/FullLogo.png /usr/share/plymouth/themes/pix/splash.png", 4, total_steps, "Setting wallpaper and splash screen...")
-
-    # Step 5: Enable I2C, SPI, RealVNC, 1-Wire, disable serial port
-    run_shell_command("sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_serial 1", 5, total_steps, "Enabling I2C, SPI, RealVNC, disabling serial port...")
-
-    # Step 6: Install Mosquitto
-    run_shell_command("sudo apt-get install -y mosquitto mosquitto-clients && sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2", 6, total_steps, "Installing Mosquitto...")
-
-    # Step 7: Increase swap size
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh", 7, total_steps, "Increasing swap size...")
-
-    # Step 8: Add board update to auto-start for first reboot
-    run_shell_command("bash /home/Automata/update_sequent_boards.sh", 8, total_steps, "Setting up board updates...")
-
-    # Step 9: Installation complete
-    update_progress(9, total_steps, "Installation complete. Please reboot.")
-
-    # Show final message after reboot
-    show_reboot_prompt()
-
-# Function to show final reboot prompt
-def show_reboot_prompt():
-    root.withdraw()  # Hide the main window
-    final_window = tk.Tk()
-    final_window.title("Installation Complete")
-    final_window.geometry("600x400")
-    final_window.configure(bg='#2e2e2e')
-
-    final_label = tk.Label(final_window, text="Automata Building Management & HVAC Controller", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
-    final_label.pack(pady=20)
-
-    final_message = tk.Label(final_window, text="A New Realm of Automation Awaits!\nPlease reboot to finalize settings and config files.\n\nReboot Now?", font=("Helvetica", 14), fg="orange", bg="#2e2e2e")
-    final_message.pack(pady=20)
-
-    # Reboot and Exit buttons
-    button_frame = tk.Frame(final_window, bg='#2e2e2e')
-    button_frame.pack(pady=20)
-
-    reboot_button = tk.Button(button_frame, text="Yes", font=("Helvetica", 12), command=lambda: subprocess.Popen('sudo reboot', shell=True), bg='#00b3b3', fg="black", width=10)
-    reboot_button.grid(row=0, column=0, padx=10)
-
-    exit_button = tk.Button(button_frame, text="No", font=("Helvetica", 12), command=final_window.destroy, bg='orange', fg="black", width=10)
-    exit_button.grid(row=0, column=1, padx=10)
-
-    final_window.mainloop()
-
-# Start the installation in a separate thread to keep GUI responsive
-threading.Thread(target=run_installation_steps).start()
-
-# Tkinter loop runs in the background while install runs
-root.mainloop()
-EOF
-
-# Step 6: Start the Tkinter GUI in the background
-python3 $INSTALL_GUI
-
-# Step 7: Ensure Chromium doesn't leave the desktop blank after closing
-cat << 'EOF' > /home/Automata/launch_chromium.sh
-#!/bin/bash
-
-# Wait for the network to be connected
-while ! ping -c 1 127.0.0.1 &>/dev/null; do
-    sleep 1
-done
-
-# Wait for an additional 10 seconds after network connection
-sleep 10
-
-# Launch Chromium with two tabs
-chromium-browser http://127.0.0.1:1880/ http://127.0.0.1:1880/ui
-
-# Reload desktop environment after closing Chromium
-pcmanfm --desktop &
-EOF
-
-# Make the script executable
-chmod +x /home/Automata/launch_chromium.sh
-
-# Add the script to autostart for the current user
-AUTOSTART_FILE="/home/Automata/.config/lxsession/LXDE-pi/autostart"
-
-# Ensure the autostart directory exists
-mkdir -p $(dirname "$AUTOSTART_FILE")
-
-# Add the launch script to autostart
-if ! grep -q 'launch_chromium.sh' "$AUTOSTART_FILE"; then
-    echo "@/home/Automata/launch_chromium.sh" >> "$AUTOSTART_FILE"
+    # Set the logo as the splash screen
+    sudo cp "$LOGO_PATH" /usr/share/plymouth/themes/pix/splash.png
+    echo "Logo set successfully."
+else
+    echo "Error: $LOGO_PATH not found. Please place FullLogo.png in the correct directory."
 fi
 
-echo "Chromium launch script has been added to autostart."
+# Step 5: Install Mosquitto and configure user authentication
+echo "Installing Mosquitto and setting up user authentication..."
 
+# Set DEBIAN_FRONTEND to noninteractive to avoid prompts during package installation
+export DEBIAN_FRONTEND=noninteractive
+
+# Install Mosquitto and clients without prompting for confirmation
+sudo apt-get install -y mosquitto mosquitto-clients
+
+# Add Mosquitto user and password in non-interactive mode
+echo "Setting up Mosquitto password for user Automata..."
+sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2
+
+# Create Mosquitto configuration
+echo "listener 1883
+allow_anonymous false
+password_file /etc/mosquitto/passwd
+per_listener_settings true" | sudo tee /etc/mosquitto/mosquitto.conf
+
+# Enable and restart Mosquitto service
+sudo systemctl enable mosquitto
+sudo systemctl restart mosquitto || echo "Warning: Mosquitto service failed to start. Check logs."
+
+# Step 6: Increase the swap size to 2048 MB
+run_script "increase_swap_size.sh"
+
+# Step 7: Install/update Node-RED and enable the service
+echo "Installing Node-RED..."
+sudo apt-get install -y nodered  # Automatic 'y' for confirmation
+sudo systemctl enable nodered
+sudo systemctl start nodered || echo "Warning: Node-RED service failed to start. Check logs."
+
+# Step 8: Run SequentMSInstall.sh to install Sequent Microsystems drivers
+if [ -f "/home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh" ]; then
+    echo "Running SequentMSInstall.sh..."
+
+    # Install repositories in the AutomataBuildingManagment-HvacController directory
+    git clone https://github.com/SequentMicrosystems/megabas-rpi.git /home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi
+    cd /home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi && sudo make install
+
+    git clone https://github.com/SequentMicrosystems/megaind-rpi.git /home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi
+    cd /home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi && sudo make install
+
+    git clone https://github.com/SequentMicrosystems/16univin-rpi.git /home/Automata/AutomataBuildingManagment-HvacController/16univin-rpi
+    cd /home/Automata/AutomataBuildingManagment-HvacController/16univin-rpi && sudo make install
+
+    git clone https://github.com/SequentMicrosystems/16relind-rpi.git /home/Automata/AutomataBuildingManagment-HvacController/16relind-rpi
+    cd /home/Automata/AutomataBuildingManagment-HvacController/16relind-rpi && sudo make install
+
+    git clone https://github.com/SequentMicrosystems/8relind-rpi.git /home/Automata/AutomataBuildingManagment-HvacController/8relind-rpi
+    cd /home/Automata/AutomataBuildingManagment-HvacController/8relind-rpi && sudo make install
+else
+    echo "SequentMSInstall.sh not found, skipping..."
+fi
+
+# Step 9: Enable I2C, SPI, VNC, 1-Wire, Remote GPIO, and SSH; disable serial port
+echo "Enabling I2C, SPI, VNC, 1-Wire, Remote GPIO, and SSH; disabling serial port..."
+
+# Enable I2C
+sudo raspi-config nonint do_i2c 0
+echo "I2C enabled."
+
+# Enable SPI
+sudo raspi-config nonint do_spi 0
+echo "SPI enabled."
+
+# Enable VNC
+sudo raspi-config nonint do_vnc 0
+echo "VNC enabled."
+
+# Enable 1-Wire
+sudo raspi-config nonint do_onewire 0
+echo "1-Wire enabled."
+
+# Enable Remote GPIO
+sudo raspi-config nonint do_rgpio 0
+echo "Remote GPIO enabled."
+
+# Enable SSH
+sudo raspi-config nonint do_ssh 0
+echo "SSH enabled."
+
+# Disable Serial Port
+sudo raspi-config nonint do_serial 1
+echo "Serial port disabled."
+
+# Step 10: Create a desktop icon to launch Chromium to Node-RED and UI
+DESKTOP_FILE="/home/Automata/Desktop/NodeRed.desktop"
+echo "[Desktop Entry]" > "$DESKTOP_FILE"
+echo "Version=1.0" >> "$DESKTOP_FILE"
+echo "Name=Node-RED Dashboard" >> "$DESKTOP_FILE"
+echo "Comment=Open Node-RED in Chromium" >> "$DESKTOP_FILE"
+echo "Exec=chromium-browser --new-window http://127.0.0.1:1880/ http://127.0.0.1:1880/ui" >> "$DESKTOP_FILE"
+echo "Icon=chromium" >> "$DESKTOP_FILE"
+echo "Terminal=false" >> "$DESKTOP_FILE"
+echo "Type=Application" >> "$DESKTOP_FILE"
+echo "Categories=Utility;Application;" >> "$DESKTOP_FILE"
+
+# Make the desktop file executable
+chmod +x "$DESKTOP_FILE"
+echo "Desktop icon created at $DESKTOP_FILE."
+
+# Step 11: Show success dialog box
+zenity --info --width=400 --height=300 --text="You have successfully Installed Automata Control System Components: A Realm of Automation Awaits!" --title="Installation Complete" --window-icon="$LOGO_PATH" --ok-label="Reboot Now" --cancel-label="Later"
+
+# Ask the user if they want to reboot now
+if [ $? = 0 ]; then
+    echo "Rebooting the system now..."
+    sudo reboot
+else
+    echo "Reboot canceled."
+fi
