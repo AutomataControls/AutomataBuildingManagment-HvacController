@@ -75,7 +75,7 @@ def run_installation_steps():
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh", 4, total_steps, "Installing Sequent Microsystems drivers...")
     sleep(2)
 
-    run_shell_command("lxterminal --command 'bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh'", 5, total_steps, "Installing Node-RED interactively...")
+    run_shell_command("lxterminal --hold --command='bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh'", 5, total_steps, "Installing Node-RED interactively...")
     sleep(2)
 
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh", 6, total_steps, "Installing Node-RED palettes...")
