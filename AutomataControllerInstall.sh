@@ -17,11 +17,7 @@ echo "Installing dependencies for GUI and Chromium..."
 sudo apt-get update
 sudo apt-get install -y python3-tk python3-pil python3-pil.imagetk chromium-browser
 
-# Step 4: Run the Internet time sync script before driver installation
-echo "Setting Internet time..."
-bash /home/Automata/AutomataBuildingManagment-HvacController/set_internet_time_rpi4.sh
-
-# Step 5: Create the Python GUI script for the installation progress
+# Step 4: Create the Python GUI script for the installation progress (Start GUI earlier)
 INSTALL_GUI="/home/Automata/install_progress_gui.py"
 
 cat << 'EOF' > $INSTALL_GUI
@@ -67,32 +63,35 @@ def run_shell_command(command, step, total_steps, message):
 def run_installation_steps():
     total_steps = 10
 
-    # Step 1: Install Sequent Microsystems drivers
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh", 1, total_steps, "Installing Sequent Microsystems drivers...")
+    # Step 1: Set Internet Time with Eastern Standard Time
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_internet_time_rpi4.sh", 1, total_steps, "Setting system time to Eastern Standard Time...")
 
-    # Step 2: Install Node-RED and its palettes interactively in a new terminal
-    run_shell_command("lxterminal -e 'bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh'", 2, total_steps, "Installing Node-RED interactively...")
+    # Step 2: Install Sequent Microsystems drivers
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh", 2, total_steps, "Installing Sequent Microsystems drivers...")
 
-    # Step 3: Set up Chromium auto-start (temporary for now)
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/InstallChromiumAutoStart.sh", 3, total_steps, "Setting up temporary Chromium auto-start...")
+    # Step 3: Install Node-RED and its palettes
+    run_shell_command("lxterminal -e 'bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh'", 3, total_steps, "Installing Node-RED interactively...")
+    
+    # Step 4: Install Node-RED palettes
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh", 4, total_steps, "Installing Node-RED palettes...")
 
-    # Step 4: Set FullLogo.png as wallpaper and splash screen
-    run_shell_command("sudo -u Automata DISPLAY=:0 pcmanfm --desktop & sleep 5 && sudo -u Automata DISPLAY=:0 pcmanfm --set-wallpaper='/home/Automata/FullLogo.png' && sudo cp /home/Automata/FullLogo.png /usr/share/plymouth/themes/pix/splash.png", 4, total_steps, "Setting wallpaper and splash screen...")
+    # Step 5: Set FullLogo.png as wallpaper and splash screen
+    run_shell_command("sudo -u Automata DISPLAY=:0 pcmanfm --desktop & sleep 5 && sudo -u Automata DISPLAY=:0 pcmanfm --set-wallpaper='/home/Automata/FullLogo.png' && sudo cp /home/Automata/FullLogo.png /usr/share/plymouth/themes/pix/splash.png", 5, total_steps, "Setting wallpaper and splash screen...")
 
-    # Step 5: Enable I2C, SPI, RealVNC, 1-Wire, disable serial port
-    run_shell_command("sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_serial 1", 5, total_steps, "Enabling I2C, SPI, RealVNC, disabling serial port...")
+    # Step 6: Enable I2C, SPI, RealVNC, 1-Wire, disable serial port
+    run_shell_command("sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_serial 1", 6, total_steps, "Enabling I2C, SPI, RealVNC, disabling serial port...")
 
-    # Step 6: Install Mosquitto
-    run_shell_command("sudo apt-get install -y mosquitto mosquitto-clients && sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2", 6, total_steps, "Installing Mosquitto...")
+    # Step 7: Install Mosquitto
+    run_shell_command("sudo apt-get install -y mosquitto mosquitto-clients && sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2", 7, total_steps, "Installing Mosquitto...")
 
-    # Step 7: Increase swap size
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh", 7, total_steps, "Increasing swap size...")
+    # Step 8: Increase swap size
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh", 8, total_steps, "Increasing swap size...")
 
-    # Step 8: Add board update to auto-start for first reboot
-    run_shell_command("bash /home/Automata/update_sequent_boards.sh", 8, total_steps, "Setting up board updates...")
+    # Step 9: Add board update to auto-start for first reboot
+    run_shell_command("bash /home/Automata/update_sequent_boards.sh", 9, total_steps, "Setting up board updates...")
 
-    # Step 9: Installation complete
-    update_progress(9, total_steps, "Installation complete. Please reboot.")
+    # Step 10: Installation complete
+    update_progress(10, total_steps, "Installation complete. Please reboot.")
 
     # Show final message after reboot
     show_reboot_prompt()
@@ -130,10 +129,10 @@ threading.Thread(target=run_installation_steps).start()
 root.mainloop()
 EOF
 
-# Step 6: Start the Tkinter GUI in the background
+# Step 5: Start the Tkinter GUI in the background
 python3 $INSTALL_GUI
 
-# Step 7: Ensure Chromium doesn't leave the desktop blank after closing
+# Step 6: Ensure Chromium doesn't leave the desktop blank after closing
 cat << 'EOF' > /home/Automata/launch_chromium.sh
 #!/bin/bash
 
@@ -151,7 +150,7 @@ pcmanfm --desktop &
 # Launch Chromium in windowed mode (not full-screen or kiosk mode)
 chromium-browser --new-window http://127.0.0.1:1880/ http://127.0.0.1:1880/ui &
 
-# Keep the script running to prevent the session from closing
+# Keep the script running to preventsession from closing
 wait
 EOF
 
