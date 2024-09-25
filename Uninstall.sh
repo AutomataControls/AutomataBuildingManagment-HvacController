@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # Log file setup
@@ -90,14 +91,6 @@ else
     echo "Repository directory not found, skipping..."
 fi
 
-# Step 8: Display a dialog box for successful uninstallation and reboot prompt
-echo "Displaying uninstallation success dialog..."
-whiptail --title "Uninstallation Complete" --msgbox "Uninstall of Automata BMS Successful" 8 50
-
-# Ask the user if they want to reboot now
-if whiptail --title "Reboot Confirmation" --yesno "Would you like to reboot the system now?" 8 50; then
-    echo "Rebooting the system now..."
-    sudo reboot
-else
-    echo "Reboot canceled."
-fi
+# Step 8: Start the Tkinter GUI for uninstallation
+echo "Starting uninstallation GUI..."
+python3 /home/Automata/AutomataBuildingManagment-HvacController/uninstall_progress_gui.py
