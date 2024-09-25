@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # Step 1: Ensure the script is running as root
@@ -147,5 +146,7 @@ root.mainloop()
 EOF
 
 # Step 4: Start the Tkinter GUI in the background
-python3 $INSTALL_GUI
+sleep 15  # Ensures that desktop and GUI are fully loaded
+python3 $INSTALL_GUI &
+
 
