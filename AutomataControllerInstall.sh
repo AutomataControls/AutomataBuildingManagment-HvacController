@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # Step 1: Ensure the script is running as root
@@ -115,44 +114,5 @@ threading.Thread(target=run_installation_steps).start()
 root.mainloop()
 EOF
 
-# Step 4: Set up Chromium Auto-launch on reboot using systemd
-AUTO_LAUNCH_SCRIPT="/home/Automata/launch_chromium.py"
-cat << 'EOF' > $AUTO_LAUNCH_SCRIPT
-import time
-import subprocess
+# Step 4: Reboot prompt handled in the GUI
 
-# Wait for the network to connect
-while True:
-    try:
-        subprocess.check_call(['ping', '-c', '1', '127.0.0.1'])
-        break
-    except subprocess.CalledProcessError:
-        time.sleep(1)
-
-# Wait additional time for services to load
-time.sleep(15)
-
-# Launch Chromium in windowed mode
-subprocess.Popen(['chromium-browser', '--disable-features=KioskMode', '--new-window', 'http://127.0.0.1:1880/', 'http://127.0.0.1:1880/ui'])
-EOF
-
-# Create systemd service
-cat << 'EOF' > /etc/systemd/system/chromium-launch.service
-[Unit]
-Description=Auto-launch Chromium at boot
-After=network.target
-
-[Service]
-ExecStart=/usr/bin/python3 /home/Automata/launch_chromium.py
-User=Automata
-Environment=DISPLAY=:0
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# Enable the service
-systemctl enable chromium-launch.service
-
-# Reboot prompt handled in the GUI
