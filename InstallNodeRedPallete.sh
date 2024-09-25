@@ -16,7 +16,8 @@ npm install -g node-red-contrib-ui-led \
                node-red-contrib-cpu \
                node-red-contrib-bme280-rpi \
                node-red-contrib-bme280 \
-               node-red-node-aws
+               node-red-node-awsnode-red-contrib-themes/theme-collection
+               
 
 # Install Node-RED themes
 npm install -g @node-red-contrib-themes/dark \
