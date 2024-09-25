@@ -17,13 +17,14 @@ echo "Installing Tkinter and Pillow..."
 sudo apt-get update
 sudo apt-get install -y python3-tk python3-pil python3-pil.imagetk
 
-# Step 4: Create a Python script for the Tkinter GUI with progress bar
+# Step 4: Create a Python script for the Tkinter GUI with progress bar and async execution
 INSTALL_GUI="/home/Automata/install_progress_gui.py"
 
 cat << 'EOF' > $INSTALL_GUI
 import tkinter as tk
 from tkinter import ttk
 import subprocess
+import threading
 
 # Create the main window
 root = tk.Tk()
@@ -51,125 +52,77 @@ def update_progress(step, total_steps, message):
     status_label.config(text=message)
     root.update_idletasks()
 
+# Function to run shell commands in a separate thread
 def run_shell_command(command, step, total_steps, message):
     update_progress(step, total_steps, message)
-    subprocess.run(command, shell=True)
+    subprocess.Popen(command, shell=True).wait()
+
+def run_installation_steps():
+    total_steps = 10
+
+    # Step 1: Install Sequent Microsystems drivers
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh", 1, total_steps, "Installing Sequent Microsystems drivers...")
+
+    # Step 2: Install Node-RED
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", 2, total_steps, "Installing Node-RED and palettes...")
+
+    # Step 3: Set up Chromium auto-start
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/InstallChromiumAutoStart.sh", 3, total_steps, "Setting up Chromium auto-start...")
+
+    # Step 4: Set wallpaper and splash screen
+    run_shell_command("sudo mv /home/Automata/AutomataBuildingManagment-HvacController/FullLogo.png /home/Automata/FullLogo.png && sudo -u Automata DISPLAY=:0 pcmanfm --set-wallpaper='/home/Automata/FullLogo.png' && sudo cp /home/Automata/FullLogo.png /usr/share/plymouth/themes/pix/splash.png", 4, total_steps, "Setting up wallpaper and splash screen...")
+
+    # Step 5: Enable I2C, SPI, RealVNC, and more
+    run_shell_command("sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_serial 1", 5, total_steps, "Enabling I2C, SPI, RealVNC, and more...")
+
+    # Step 6: Install Mosquitto
+    run_shell_command("sudo apt-get install -y mosquitto mosquitto-clients && sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2", 6, total_steps, "Installing Mosquitto...")
+
+    # Step 7: Increase swap size
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh", 7, total_steps, "Increasing swap size...")
+
+    # Step 8: Add board updates to autostart
+    run_shell_command("bash /home/Automata/update_sequent_boards.sh", 8, total_steps, "Adding board updates to autostart...")
+
+    # Step 9: Installation complete
+    update_progress(9, total_steps, "Installation complete. Please reboot.")
+
+    # Show final message after reboot
+    show_reboot_prompt()
+
+# Function to show final reboot prompt
+def show_reboot_prompt():
+    root.withdraw()  # Hide the main window
+    final_window = tk.Tk()
+    final_window.title("Installation Complete")
+    final_window.geometry("600x400")
+    final_window.configure(bg='#2e2e2e')
+
+    final_label = tk.Label(final_window, text="Automata Building Management & HVAC Controller", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
+    final_label.pack(pady=20)
+
+    final_message = tk.Label(final_window, text="A New Realm of Automation Awaits!\nPlease reboot to finalize settings and config files.\n\nReboot Now?", font=("Helvetica", 14), fg="orange", bg="#2e2e2e")
+    final_message.pack(pady=20)
+
+    # Reboot and Exit buttons
+    button_frame = tk.Frame(final_window, bg='#2e2e2e')
+    button_frame.pack(pady=20)
+
+    reboot_button = tk.Button(button_frame, text="Yes", font=("Helvetica", 12), command=lambda: subprocess.Popen('sudo reboot', shell=True), bg='#00b3b3', fg="black", width=10)
+    reboot_button.grid(row=0, column=0, padx=10)
+
+    exit_button = tk.Button(button_frame, text="No", font=("Helvetica", 12), command=final_window.destroy, bg='orange', fg="black", width=10)
+    exit_button.grid(row=0, column=1, padx=10)
+
+    final_window.mainloop()
+
+# Start the installation in a separate thread
+threading.Thread(target=run_installation_steps).start()
 
 # Tkinter loop runs in the background while install runs
 root.mainloop()
 EOF
 
 # Step 5: Start the Tkinter GUI in the background
-python3 $INSTALL_GUI &
-GUI_PID=$!
+python3 $INSTALL_GUI
 
-# Helper function to update progress and run a shell command
-run_command_with_progress() {
-    STEP=$1
-    TOTAL=$2
-    MESSAGE=$3
-    COMMAND=$4
-    update_gui $STEP $TOTAL "$MESSAGE"
-    python3 -c "import subprocess; subprocess.run('$COMMAND', shell=True)"
-}
-
-# Function to update the GUI
-update_gui() {
-    STEP=$1
-    TOTAL=$2
-    MESSAGE=$3
-    python3 -c "
-import tkinter as tk
-from tkinter import ttk
-root = tk.Tk()
-root.update_idletasks()
-progress = ttk.Progressbar(root, orient='horizontal', length=500, mode='determinate')
-progress['value'] = ($STEP / $TOTAL) * 100
-root.update_idletasks()
-status_label = tk.Label(root, text='$MESSAGE')
-status_label.config(text='$MESSAGE')
-root.update_idletasks()
-" 2>/dev/null
-    echo "$MESSAGE"
-    sleep 2  # Allow time for the UI to update
-}
-
-# Total steps for installation (estimate)
-TOTAL_STEPS=10
-
-# Step 6: Install Sequent Microsystems drivers (Progress: 1/10)
-run_command_with_progress 1 $TOTAL_STEPS "Installing Sequent Microsystems drivers..." "bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh"
-
-# Step 7: Install Node-RED and Node-RED Palettes (Progress: 2/10)
-run_command_with_progress 2 $TOTAL_STEPS "Installing Node-RED and palettes..." "bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh && bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh"
-
-# Step 8: Set up Chromium auto-start (Progress: 3/10)
-run_command_with_progress 3 $TOTAL_STEPS "Setting up Chromium auto-start..." "bash /home/Automata/AutomataBuildingManagment-HvacController/InstallChromiumAutoStart.sh"
-
-# Step 9: Move FullLogo.png and set it as wallpaper and splash screen (Progress: 4/10)
-run_command_with_progress 4 $TOTAL_STEPS "Setting up logo as wallpaper and splash screen..." "sudo mv /home/Automata/AutomataBuildingManagment-HvacController/FullLogo.png /home/Automata/FullLogo.png && sudo -u Automata DISPLAY=:0 pcmanfm --set-wallpaper='/home/Automata/FullLogo.png' && sudo cp /home/Automata/FullLogo.png /usr/share/plymouth/themes/pix/splash.png"
-
-# Step 10: Enable I2C, SPI, RealVNC, 1-Wire, and disable serial port (Progress: 5/10)
-run_command_with_progress 5 $TOTAL_STEPS "Enabling I2C, SPI, RealVNC, 1-Wire, disabling serial port..." "sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_serial 1"
-
-# Step 11: Install Mosquitto (Progress: 6/10)
-run_command_with_progress 6 $TOTAL_STEPS "Installing Mosquitto..." "sudo apt-get install -y mosquitto mosquitto-clients && sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2"
-
-# Step 12: Increase swap size (Progress: 7/10)
-run_command_with_progress 7 $TOTAL_STEPS "Increasing swap size..." "bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh"
-
-# Step 13: Add board update to autostart (Progress: 8/10)
-run_command_with_progress 8 $TOTAL_STEPS "Adding board updates to autostart..." "bash /home/Automata/update_sequent_boards.sh"
-
-# Step 14: Final step - Installation complete (Progress: 9/10)
-run_command_with_progress 9 $TOTAL_STEPS "Installation complete. Please reboot." ""
-
-# Step 15: Final Message for Reboot in a Tkinter GUI
-
-FINAL_MESSAGE_GUI="/home/Automata/final_message_gui.py"
-
-cat << 'EOF3' > $FINAL_MESSAGE_GUI
-import tkinter as tk
-
-def on_reboot():
-    import os
-    os.system('sudo reboot')
-
-def on_exit():
-    root.destroy()
-
-# Create the main window
-root = tk.Tk()
-root.title("Installation Complete")
-
-# Set window size and position
-root.geometry("600x400")
-root.configure(bg='#2e2e2e')  # Dark grey background
-
-# Final message
-label = tk.Label(root, text="Automata Building Management & HVAC Controller", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
-label.pack(pady=20)
-
-message = tk.Label(root, text="A New Realm of Automation Awaits!\nPlease reboot to finalize settings and config files.\n\nReboot Now?", font=("Helvetica", 14), fg="orange", bg="#2e2e2e")
-message.pack(pady=20)
-
-# Reboot and Later buttons
-button_frame = tk.Frame(root, bg='#2e2e2e')
-button_frame.pack(pady=20)
-
-reboot_button = tk.Button(button_frame, text="Yes", font=("Helvetica", 12), command=on_reboot, bg='#00b3b3', fg="black", width=10)
-reboot_button.grid(row=0, column=0, padx=10)
-
-exit_button = tk.Button(button_frame, text="No", font=("Helvetica", 12), command=on_exit, bg='orange', fg="black", width=10)
-exit_button.grid(row=0, column=1, padx=10)
-
-# Start the Tkinter main loop
-root.mainloop()
-EOF3
-
-# Step 16: Start the final message GUI
-python3 $FINAL_MESSAGE_GUI
-
-# Step 17: Close the progress GUI after completion
-kill $GUI_PID
-echo "Installation complete. Exiting."
