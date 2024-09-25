@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # Step 1: Ensure the script is running as root
@@ -18,7 +17,11 @@ echo "Installing dependencies for GUI and Chromium..."
 sudo apt-get update
 sudo apt-get install -y python3-tk python3-pil python3-pil.imagetk chromium-browser
 
-# Step 4: Create the Python GUI script for the installation progress
+# Step 4: Run the Internet time sync script before driver installation
+echo "Setting Internet time..."
+bash /home/Automata/AutomataBuildingManagment-HvacController/set_internet_time_rpi4.sh
+
+# Step 5: Create the Python GUI script for the installation progress
 INSTALL_GUI="/home/Automata/install_progress_gui.py"
 
 cat << 'EOF' > $INSTALL_GUI
@@ -124,6 +127,5 @@ threading.Thread(target=run_installation_steps).start()
 root.mainloop()
 EOF
 
-# Step 5: Start the Tkinter GUI in the background
+# Step 6: Start the Tkinter GUI in the background
 python3 $INSTALL_GUI
-
