@@ -67,8 +67,8 @@ def run_installation_steps():
     # Step 1: Install Sequent Microsystems drivers
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh", 1, total_steps, "Installing Sequent Microsystems drivers...")
 
-    # Step 2: Install Node-RED and its palettes
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", 2, total_steps, "Installing Node-RED and palettes...")
+    # Step 2: Install Node-RED and its palettes interactively in a new terminal
+    run_shell_command("lxterminal -e 'bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh'", 2, total_steps, "Installing Node-RED interactively...")
 
     # Step 3: Set up Chromium auto-start (temporary for now)
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/InstallChromiumAutoStart.sh", 3, total_steps, "Setting up temporary Chromium auto-start...")
@@ -129,3 +129,39 @@ EOF
 
 # Step 6: Start the Tkinter GUI in the background
 python3 $INSTALL_GUI
+
+# Step 7: Ensure Chromium doesn't leave the desktop blank after closing
+cat << 'EOF' > /home/Automata/launch_chromium.sh
+#!/bin/bash
+
+# Wait for the network to be connected
+while ! ping -c 1 127.0.0.1 &>/dev/null; do
+    sleep 1
+done
+
+# Wait for an additional 10 seconds after network connection
+sleep 10
+
+# Launch Chromium with two tabs
+chromium-browser http://127.0.0.1:1880/ http://127.0.0.1:1880/ui
+
+# Reload desktop environment after closing Chromium
+pcmanfm --desktop &
+EOF
+
+# Make the script executable
+chmod +x /home/Automata/launch_chromium.sh
+
+# Add the script to autostart for the current user
+AUTOSTART_FILE="/home/Automata/.config/lxsession/LXDE-pi/autostart"
+
+# Ensure the autostart directory exists
+mkdir -p $(dirname "$AUTOSTART_FILE")
+
+# Add the launch script to autostart
+if ! grep -q 'launch_chromium.sh' "$AUTOSTART_FILE"; then
+    echo "@/home/Automata/launch_chromium.sh" >> "$AUTOSTART_FILE"
+fi
+
+echo "Chromium launch script has been added to autostart."
+
