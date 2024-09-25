@@ -56,7 +56,7 @@ def run_shell_command(command, step, total_steps, message):
         print(f"Command output: {result.stdout}")
 
 def run_installation_steps():
-    total_steps = 12
+    total_steps = 18
     
     run_shell_command("sudo raspi-config nonint do_blanking 1", 1, total_steps, "Disabling screen blanking...")
     sleep(2)
@@ -64,34 +64,54 @@ def run_installation_steps():
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_internet_time_rpi4.sh", 2, total_steps, "Setting system time...")
     sleep(2)
 
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh", 3, total_steps, "Installing Sequent Microsystems drivers...")
+    # Installing Sequent Microsystems boards
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi/update", 3, total_steps, "Installing megabas-rpi drivers...")
     sleep(2)
 
-    run_shell_command("lxterminal -e 'bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh'", 4, total_steps, "Installing Node-RED interactively...")
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi/update", 4, total_steps, "Installing megaind-rpi drivers...")
     sleep(2)
 
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh", 5, total_steps, "Installing Node-RED palettes...")
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/16univin-rpi/update", 5, total_steps, "Installing 16univin-rpi drivers...")
     sleep(2)
 
-    run_shell_command("sudo mv /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/splash.png", 6, total_steps, "Moving splash.png...")
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/16relind-rpi/update", 6, total_steps, "Installing 16relind-rpi drivers...")
     sleep(2)
 
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_full_logo_image_rpi4.sh", 7, total_steps, "Setting splash image...")
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/8relind-rpi/update", 7, total_steps, "Installing 8relind-rpi drivers...")
     sleep(2)
 
-    run_shell_command("sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_serial 1", 8, total_steps, "Configuring interfaces...")
+    # Node-RED installation
+    run_shell_command("lxterminal -e 'bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh'", 8, total_steps, "Running Node-RED installation interactively...")
     sleep(2)
 
-    run_shell_command("sudo apt-get install -y mosquitto mosquitto-clients", 9, total_steps, "Installing Mosquitto...")
+    # Node-RED palettes installation
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh --install node-red-dashboard", 9, total_steps, "Installing palette: node-red-dashboard...")
+    sleep(2)
+
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh --install node-red-contrib-some-palette", 10, total_steps, "Installing palette: node-red-contrib-some-palette...")
+    sleep(2)
+
+    # Add more palettes here if needed
+
+    run_shell_command("sudo mv /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/splash.png", 11, total_steps, "Moving splash.png...")
+    sleep(2)
+
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_full_logo_image_rpi4.sh", 12, total_steps, "Setting splash image...")
+    sleep(2)
+
+    run_shell_command("sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_serial 1", 13, total_steps, "Configuring interfaces...")
+    sleep(2)
+
+    run_shell_command("sudo apt-get install -y mosquitto mosquitto-clients", 14, total_steps, "Installing Mosquitto...")
 
     # Ensure mosquitto password file is created
-    run_shell_command("sudo touch /etc/mosquitto/passwd && sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2", 10, total_steps, "Setting Mosquitto password file...")
+    run_shell_command("sudo touch /etc/mosquitto/passwd && sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2", 15, total_steps, "Setting Mosquitto password file...")
     sleep(2)
 
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh", 11, total_steps, "Increasing swap size...")
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh", 16, total_steps, "Increasing swap size...")
     sleep(2)
 
-    update_progress(12, total_steps, "Installation complete. Please reboot.")
+    update_progress(17, total_steps, "Installation complete. Please reboot.")
     show_reboot_prompt()
 
 def update_progress(step, total_steps, message):
@@ -147,7 +167,6 @@ chmod +x $INSTALL_GUI
 # Step 5: Run the GUI (only start it once)
 log "Running installation GUI..."
 sudo -u Automata DISPLAY=:0 python3 $INSTALL_GUI &
-sleep 2  # Adding a delay to prevent GUI from being started twice
 
 # Step 6: Set up Chromium Auto-launch
 log "Setting up Chromium auto-launch..."
@@ -212,13 +231,23 @@ EOF
 # Enable the board update service
 systemctl enable update-boards.service
 
-# Step 8: Permissions for the repo files after reboot
-log "Setting permissions for files in repository after reboot..."
+# Step 8: Permissions for the repo files and /home/Automata directory after reboot
+log "Setting permissions for files in repository and Automata directories after reboot..."
+
+# Set permissions for the repository directory
 REPO_DIR="/home/Automata/AutomataBuildingManagment-HvacController"
 if [ -d "$REPO_DIR" ]; then
-    log "Setting permissions for files in repository directory..."
+    log "Setting permissions for files in the repository directory..."
     find "$REPO_DIR" -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \;
     find "$REPO_DIR" -type f -name "*.png" -exec chmod +r {} \;
+fi
+
+# Set permissions for the /home/Automata directory
+AUTOMATA_DIR="/home/Automata"
+if [ -d "$AUTOMATA_DIR" ]; then
+    log "Setting permissions for files in /home/Automata directory..."
+    find "$AUTOMATA_DIR" -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \;
+    find "$AUTOMATA_DIR" -type f -name "*.png" -exec chmod +r {} \;
 fi
 
 log "Installation completed. GUI should be running. You may reboot to finalize settings."
