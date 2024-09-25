@@ -1,5 +1,22 @@
 #!/bin/bash
 
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+# Function to log messages
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOGFILE"
+}
+
+# Function to handle errors
+handle_error() {
+    log "Error occurred in line $1"
+    exit 1
+}
+
+# Set up error handling
+trap 'handle_error $LINENO' ERR
+
 # Step 1: Ensure the script is running as root
 if [ "$EUID" -ne 0 ]; then
     echo "Please run as root. Re-running with sudo..."
@@ -9,35 +26,28 @@ fi
 
 # Step 2: Log file setup
 LOGFILE="/home/Automata/install_log.txt"
-exec > >(tee -i "$LOGFILE") 2>&1
-echo "Installation started at: $(date)"
+log "Installation started"
 
-# Step 3: Install necessary dependencies for the GUI, Chromium, and other components
-sudo apt-get update
-sudo apt-get install -y python3-tk python3-pil python3-pil.imagetk mosquitto mosquitto-clients chromium-browser lxterminal
+# Step 3: Install necessary dependencies
+log "Updating package lists and installing dependencies..."
+apt-get update
+apt-get install -y python3-tk python3-pil python3-pil.imagetk mosquitto mosquitto-clients chromium-browser lxterminal
 
-# Step 4: Ensure permissions are set for all necessary files before starting the installation
-echo "Setting permissions for all necessary files before installation..."
-chmod +x /home/Automata/*.sh
-chmod +x /home/Automata/*.py
-chmod +r /home/Automata/*.png
-chmod +x /home/Automata/AutomataBuildingManagment-HvacController/*.sh
-chmod +x /home/Automata/AutomataBuildingManagment-HvacController/*.py
-chmod +r /home/Automata/AutomataBuildingManagment-HvacController/*.png
+# Step 4: Set permissions for necessary files
+log "Setting permissions for necessary files..."
+find /home/Automata -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \;
+find /home/Automata -type f -name "*.png" -exec chmod +r {} \;
 
-# Step 5: Stop lingering services (Node-RED, Mosquitto, etc.)
-echo "Checking and stopping lingering services if necessary..."
-if systemctl is-active --quiet nodered; then
-    echo "Stopping Node-RED service..."
-    sudo systemctl stop nodered
-fi
-if systemctl is-active --quiet mosquitto; then
-    echo "Stopping Mosquitto service..."
-    sudo systemctl stop mosquitto
-fi
+# Step 5: Stop lingering services
+for service in nodered mosquitto; do
+    if systemctl is-active --quiet $service; then
+        log "Stopping $service service..."
+        systemctl stop $service
+    fi
+done
 
-# Step 6: Create and run the installation progress GUI before any installation steps
-echo "Starting installation GUI..."
+# Step 6: Create and run the installation progress GUI
+log "Starting installation GUI..."
 INSTALL_GUI="/home/Automata/install_progress_gui.py"
 
 # Create the Python GUI script for installation progress
@@ -142,17 +152,10 @@ EOF
 # Ensure that the GUI script has execute permissions
 chmod +x $INSTALL_GUI
 
-# Step 7: Ensure permissions are set for all necessary files after GUI creation
-echo "Setting permissions again after GUI creation..."
-chmod +x /home/Automata/*.sh
-chmod +x /home/Automata/*.py
-chmod +r /home/Automata/*.png
-chmod +x /home/Automata/AutomataBuildingManagment-HvacController/*.sh
-chmod +x /home/Automata/AutomataBuildingManagment-HvacController/*.py
-chmod +r /home/Automata/AutomataBuildingManagment-HvacController/*.png
-
-# Step 8: Set up Chromium Auto-launch on reboot using systemd
+# Step 7: Set up Chromium Auto-launch
+log "Setting up Chromium auto-launch..."
 AUTO_LAUNCH_SCRIPT="/home/Automata/launch_chromium.py"
+
 cat << 'EOF' > $AUTO_LAUNCH_SCRIPT
 import time
 import subprocess
@@ -191,5 +194,4 @@ EOF
 # Enable the service
 systemctl enable chromium-launch.service
 
-echo "Installation completed. You may reboot to finalize settings."
-
+log "Installation completed. You may reboot to finalize settings."
