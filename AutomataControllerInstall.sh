@@ -42,26 +42,8 @@ import tkinter as tk
 from tkinter import ttk
 import subprocess
 import threading
+import os
 from time import sleep
-
-root = tk.Tk()
-root.title("Automata Installation Progress")
-root.geometry("600x400")
-root.configure(bg='#2e2e2e')
-
-label = tk.Label(root, text="Automata Installation Progress", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
-label.pack(pady=20)
-
-progress = ttk.Progressbar(root, orient="horizontal", length=500, mode="determinate")
-progress.pack(pady=20)
-
-status_label = tk.Label(root, text="Starting installation...", font=("Helvetica", 12), fg="orange", bg="#2e2e2e")
-status_label.pack(pady=10)
-
-def update_progress(step, total_steps, message):
-    progress['value'] = (step / total_steps) * 100
-    status_label.config(text=message)
-    root.update_idletasks()
 
 def run_shell_command(command, step, total_steps, message):
     update_progress(step, total_steps, message)
@@ -110,6 +92,11 @@ def run_installation_steps():
     update_progress(12, total_steps, "Installation complete. Please reboot.")
     show_reboot_prompt()
 
+def update_progress(step, total_steps, message):
+    progress['value'] = (step / total_steps) * 100
+    status_label.config(text=message)
+    root.update_idletasks()
+
 def show_reboot_prompt():
     root.withdraw()
     final_window = tk.Tk()
@@ -135,11 +122,11 @@ def show_reboot_prompt():
     final_window.mainloop()
 
 root = tk.Tk()
-root.title("Automata Installation Progress")
+root.title("Initializing Automata Configuration and Startup")
 root.geometry("600x400")
 root.configure(bg='#2e2e2e')
 
-label = tk.Label(root, text="Automata Installation Progress", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
+label = tk.Label(root, text="Initializing Automata Configuration and Startup", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
 label.pack(pady=20)
 
 progress = ttk.Progressbar(root, orient="horizontal", length=500, mode="determinate")
@@ -155,8 +142,65 @@ EOF
 # Ensure that the GUI script has execute permissions
 chmod +x $INSTALL_GUI
 
-# Step 5: Run the GUI
+# Step 5: Run the GUI (only start it once)
 log "Running installation GUI..."
 sudo -u Automata DISPLAY=:0 python3 $INSTALL_GUI &
+sleep 2  # Adding a delay to prevent GUI from being started twice
 
-# From here, all the remaining installation steps will be handled by the GUI
+# Step 6: Set up Chromium Auto-launch
+log "Setting up Chromium auto-launch..."
+AUTO_LAUNCH_SCRIPT="/home/Automata/launch_chromium.py"
+
+cat << 'EOF' > $AUTO_LAUNCH_SCRIPT
+import time
+import subprocess
+
+# Wait for the network to connect
+while True:
+    try:
+        subprocess.check_call(['ping', '-c', '1', '127.0.0.1'])
+        break
+    except subprocess.CalledProcessError:
+        time.sleep(1)
+
+# Wait additional time for services to load
+time.sleep(15)
+
+# Launch Chromium in windowed mode
+subprocess.Popen(['chromium-browser', '--disable-features=KioskMode', '--new-window', 'http://127.0.0.1:1880/', 'http://127.0.0.1:1880/ui'])
+EOF
+
+# Create systemd service for Chromium auto-launch
+cat << 'EOF' > /etc/systemd/system/chromium-launch.service
+[Unit]
+Description=Auto-launch Chromium at boot
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/Automata/launch_chromium.py
+User=Automata
+Environment=DISPLAY=:0
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Enable the service
+systemctl enable chromium-launch.service
+
+# Step 7: Final permissions for necessary files
+log "Setting final permissions for necessary files..."
+find /home/Automata -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \;
+find /home/Automata -type f -name "*.png" -exec chmod +r {} \;
+
+# Include the repository directory for setting permissions
+REPO_DIR="/home/Automata/AutomataBuildingManagment-HvacController"
+if [ -d "$REPO_DIR" ]; then
+    log "Setting final permissions for files in repository directory..."
+    find "$REPO_DIR" -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \;
+    find "$REPO_DIR" -type f -name "*.png" -exec chmod +r {} \;
+fi
+
+log "Installation completed. GUI should be running. You may reboot to finalize settings."
+
