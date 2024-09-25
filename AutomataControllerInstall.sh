@@ -12,28 +12,31 @@ LOGFILE="/home/Automata/install_log.txt"
 exec > >(tee -i "$LOGFILE") 2>&1
 echo "Installation started at: $(date)"
 
-# Step 3: Install necessary dependencies for the GUI and Chromium
+# Step 3: Install necessary dependencies for the GUI, Chromium, and other components
 sudo apt-get update
-sudo apt-get install -y python3-tk python3-pil python3-pil.imagetk mosquitto mosquitto-clients chromium-browser
+sudo apt-get install -y python3-tk python3-pil python3-pil.imagetk mosquitto mosquitto-clients chromium-browser lxterminal
 
-# Step 4: Set permissions for all files in /home/Automata/AutomataBuildingManagment-HvacController
-echo "Setting permissions for .sh, .py, and .png files in the repo..."
-sudo find /home/Automata/AutomataBuildingManagment-HvacController -type f -name "*.sh" -exec chmod +x {} \;
-sudo find /home/Automata/AutomataBuildingManagment-HvacController -type f -name "*.py" -exec chmod +x {} \;
-sudo find /home/Automata/AutomataBuildingManagment-HvacController -type f -name "*.png" -exec chmod +r {} \;
+# Step 4: Ensure permissions are set for all necessary files before starting the installation
+echo "Setting permissions for all necessary files before installation..."
+chmod +x /home/Automata/*.sh
+chmod +x /home/Automata/*.py
+chmod +r /home/Automata/*.png
+chmod +x /home/Automata/AutomataBuildingManagment-HvacController/*.sh
+chmod +x /home/Automata/AutomataBuildingManagment-HvacController/*.py
+chmod +r /home/Automata/AutomataBuildingManagment-HvacController/*.png
 
-# Step 5: Set permissions for all scripts in /home/Automata
-echo "Setting permissions for .sh, .py, and .png files in /home/Automata..."
-sudo chmod +x /home/Automata/*.sh
-sudo chmod +x /home/Automata/*.py
-sudo chmod +r /home/Automata/*.png
+# Step 5: Stop lingering services (Node-RED, Mosquitto, etc.)
+echo "Checking and stopping lingering services if necessary..."
+if systemctl is-active --quiet nodered; then
+    echo "Stopping Node-RED service..."
+    sudo systemctl stop nodered
+fi
+if systemctl is-active --quiet mosquitto; then
+    echo "Stopping Mosquitto service..."
+    sudo systemctl stop mosquitto
+fi
 
-# Step 6: Stop lingering services like Mosquitto and Node-RED if necessary
-echo "Checking and stopping lingering services..."
-sudo systemctl stop nodered.service 2>/dev/null || echo "Node-RED service not running."
-sudo systemctl stop mosquitto 2>/dev/null || echo "Mosquitto service not running."
-
-# Step 7: Start the installation GUI before any installation steps
+# Step 6: Start the installation GUI before any installation steps
 echo "Starting installation GUI..."
 INSTALL_GUI="/home/Automata/install_progress_gui.py"
 
@@ -136,6 +139,16 @@ threading.Thread(target=run_installation_steps).start()
 root.mainloop()
 EOF
 
+# Step 7: Ensure permissions are set for all necessary files after GUI creation
+echo "Setting permissions again after GUI creation..."
+chmod +x $INSTALL_GUI
+chmod +x /home/Automata/*.sh
+chmod +x /home/Automata/*.py
+chmod +r /home/Automata/*.png
+chmod +x /home/Automata/AutomataBuildingManagment-HvacController/*.sh
+chmod +x /home/Automata/AutomataBuildingManagment-HvacController/*.py
+chmod +r /home/Automata/AutomataBuildingManagment-HvacController/*.png
+
 # Step 8: Set up Chromium Auto-launch on reboot using systemd
 AUTO_LAUNCH_SCRIPT="/home/Automata/launch_chromium.py"
 cat << 'EOF' > $AUTO_LAUNCH_SCRIPT
@@ -157,7 +170,7 @@ time.sleep(15)
 subprocess.Popen(['chromium-browser', '--disable-features=KioskMode', '--new-window', 'http://127.0.0.1:1880/', 'http://127.0.0.1:1880/ui'])
 EOF
 
-# Create systemd service
+# Create systemd service for Chromium auto-launch
 cat << 'EOF' > /etc/systemd/system/chromium-launch.service
 [Unit]
 Description=Auto-launch Chromium at boot
@@ -176,4 +189,5 @@ EOF
 # Enable the service
 systemctl enable chromium-launch.service
 
-# Reboot prompt handled in the GUI
+echo "Installation completed. You may reboot to finalize settings."
+
