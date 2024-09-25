@@ -13,6 +13,7 @@ import tkinter as tk
 from tkinter import ttk
 import subprocess
 import threading
+import os  # Import os module to avoid the 'os' not defined error
 
 # Create the main window
 root = tk.Tk()
@@ -129,4 +130,3 @@ EOF
 
 # Step 2: Start the uninstallation GUI
 python3 $UNINSTALL_GUI
-
