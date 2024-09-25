@@ -1,3 +1,5 @@
+
+
 #!/bin/bash
 
 # Step 1: Ensure the script is running as root
@@ -82,7 +84,7 @@ def run_installation_steps():
     sleep(5)
 
     # Step 6: Move splash.png and set it as wallpaper and splash screen
-    run_shell_command("mv /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/ && bash /home/Automata/AutomataBuildingManagment-HvacController/set_full_logo_image_rpi4.sh", 6, total_steps, "Moving splash.png and setting it as wallpaper and splash screen...")
+    run_shell_command("sudo mv /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/ && bash /home/Automata/AutomataBuildingManagment-HvacController/set_full_logo_image_rpi4.sh", 6, total_steps, "Moving splash.png and setting it as wallpaper and splash screen...")
     sleep(5)
 
     # Step 7: Enable I2C, SPI, RealVNC, 1-Wire, disable serial port
@@ -143,4 +145,3 @@ EOF
 
 # Step 4: Start the Tkinter GUI in the background
 python3 $INSTALL_GUI
-
