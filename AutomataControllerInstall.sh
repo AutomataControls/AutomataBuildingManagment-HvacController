@@ -12,12 +12,28 @@ LOGFILE="/home/Automata/install_log.txt"
 exec > >(tee -i "$LOGFILE") 2>&1
 echo "Installation started at: $(date)"
 
-# Step 3: Install necessary dependencies
-echo "Installing necessary dependencies..."
+# Step 3: Install necessary dependencies for the GUI and Chromium
 sudo apt-get update
-sudo apt-get install -y python3-tk python3-pil python3-pil.imagetk mosquitto mosquitto-clients chromium-browser plymouth
+sudo apt-get install -y python3-tk python3-pil python3-pil.imagetk mosquitto mosquitto-clients chromium-browser
 
-# Step 4: Start the installation GUI before any installation steps
+# Step 4: Set permissions for all files in /home/Automata/AutomataBuildingManagment-HvacController
+echo "Setting permissions for .sh, .py, and .png files in the repo..."
+sudo find /home/Automata/AutomataBuildingManagment-HvacController -type f -name "*.sh" -exec chmod +x {} \;
+sudo find /home/Automata/AutomataBuildingManagment-HvacController -type f -name "*.py" -exec chmod +x {} \;
+sudo find /home/Automata/AutomataBuildingManagment-HvacController -type f -name "*.png" -exec chmod +r {} \;
+
+# Step 5: Set permissions for all scripts in /home/Automata
+echo "Setting permissions for .sh, .py, and .png files in /home/Automata..."
+sudo chmod +x /home/Automata/*.sh
+sudo chmod +x /home/Automata/*.py
+sudo chmod +r /home/Automata/*.png
+
+# Step 6: Stop lingering services like Mosquitto and Node-RED if necessary
+echo "Checking and stopping lingering services..."
+sudo systemctl stop nodered.service 2>/dev/null || echo "Node-RED service not running."
+sudo systemctl stop mosquitto 2>/dev/null || echo "Mosquitto service not running."
+
+# Step 7: Start the installation GUI before any installation steps
 echo "Starting installation GUI..."
 INSTALL_GUI="/home/Automata/install_progress_gui.py"
 
@@ -73,21 +89,16 @@ def run_installation_steps():
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh", 5, total_steps, "Installing Node-RED palettes...")
     sleep(5)
 
-    run_shell_command("sudo mv /home/Automata/AutomataBuildingManagment-HvacController/splash.png /usr/share/plymouth/themes/pix/splash.png", 6, total_steps, "Moving splash.png to boot splash location...")
+    run_shell_command("sudo mv /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/splash.png", 6, total_steps, "Moving splash.png to /home/Automata...")
     sleep(5)
 
-    run_shell_command("pcmanfm --set-wallpaper='/usr/share/plymouth/themes/pix/splash.png'", 6, total_steps, "Setting splash.png as the desktop wallpaper...")
-    sleep(5)
-
-    run_shell_command("sudo plymouth-set-default-theme pix", 6, total_steps, "Configuring splash screen for boot...")
-    sleep(5)
-
-    run_shell_command("sudo update-initramfs -u", 6, total_steps, "Applying splash screen during boot...")
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_full_logo_image_rpi4.sh", 6, total_steps, "Setting splash.png as wallpaper and splash screen...")
     sleep(5)
 
     run_shell_command("sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_serial 1", 7, total_steps, "Enabling I2C, SPI, RealVNC, disabling serial port...")
     sleep(5)
 
+    run_shell_command("sudo apt-get install -y mosquitto mosquitto-clients", 8, total_steps, "Installing Mosquitto...")
     run_shell_command("sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2", 8, total_steps, "Setting Mosquitto password file...")
     sleep(5)
 
@@ -107,7 +118,7 @@ def show_reboot_prompt():
     final_label = tk.Label(final_window, text="Automata Building Management & HVAC Controller", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
     final_label.pack(pady=20)
 
-    final_message = tk.Label(final_window, text="A New Realm of Automation Awaits!\nPlease reboot to finalize settings and config files.\n\nDeveloped by A.JewellSr, Automata Controls\nin Collaboration With Current Mechanical.\n\nReboot Now?", font=("Helvetica", 14), fg="orange", bg="#2e2e2e")
+    final_message = tk.Label(final_window, text="A New Realm of Automation Awaits!\nDeveloped by A. Jewell Sr., Automata Controls in Collaboration With Current Mechanical.\nPlease reboot to finalize settings and config files.\n\nReboot Now?", font=("Helvetica", 14), fg="orange", bg="#2e2e2e")
     final_message.pack(pady=20)
 
     button_frame = tk.Frame(final_window, bg='#2e2e2e')
@@ -125,7 +136,7 @@ threading.Thread(target=run_installation_steps).start()
 root.mainloop()
 EOF
 
-# Step 5: Set up Chromium Auto-launch on reboot using systemd
+# Step 8: Set up Chromium Auto-launch on reboot using systemd
 AUTO_LAUNCH_SCRIPT="/home/Automata/launch_chromium.py"
 cat << 'EOF' > $AUTO_LAUNCH_SCRIPT
 import time
@@ -165,16 +176,4 @@ EOF
 # Enable the service
 systemctl enable chromium-launch.service
 
-# Step 6: Ensure file permissions are correct
-echo "Setting executable permissions on necessary files..."
-chmod +x /home/Automata/*.sh
-chmod +x /home/Automata/*.py
-
-# Step 7: Check for lingering services and stop them
-echo "Checking and stopping lingering services if necessary..."
-systemctl stop nodered.service 2>/dev/null || echo "Node-RED service not running."
-systemctl stop mosquitto.service 2>/dev/null || echo "Mosquitto service not running."
-
-# Step 8: Reboot prompt handled in the GUI
-
-
+# Reboot prompt handled in the GUI
