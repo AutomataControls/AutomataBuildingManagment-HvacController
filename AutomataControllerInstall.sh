@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # Step 1: Ensure the script is running as root
@@ -24,33 +25,25 @@ import subprocess
 import threading
 from time import sleep
 
-# Create the main window
 root = tk.Tk()
 root.title("Automata Installation Progress")
-
-# Set window size and position
 root.geometry("600x400")
-root.configure(bg='#2e2e2e')  # Dark grey background
+root.configure(bg='#2e2e2e')
 
-# Title message
 label = tk.Label(root, text="Automata Installation Progress", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
 label.pack(pady=20)
 
-# Progress bar
 progress = ttk.Progressbar(root, orient="horizontal", length=500, mode="determinate")
 progress.pack(pady=20)
 
-# Status message
 status_label = tk.Label(root, text="Starting installation...", font=("Helvetica", 12), fg="orange", bg="#2e2e2e")
 status_label.pack(pady=10)
 
-# Update progress function
 def update_progress(step, total_steps, message):
     progress['value'] = (step / total_steps) * 100
     status_label.config(text=message)
     root.update_idletasks()
 
-# Function to run shell commands in a separate thread
 def run_shell_command(command, step, total_steps, message):
     update_progress(step, total_steps, message)
     result = subprocess.Popen(command, shell=True).wait()
@@ -60,60 +53,42 @@ def run_shell_command(command, step, total_steps, message):
 
 def run_installation_steps():
     total_steps = 12
-
-    # Step 1: Disable screen blanking
     run_shell_command("sudo raspi-config nonint do_blanking 1", 1, total_steps, "Disabling screen blanking...")
     sleep(5)
 
-    # Step 2: Set Internet Time with Eastern Standard Time
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_internet_time_rpi4.sh", 2, total_steps, "Setting system time to Eastern Standard Time...")
     sleep(5)
 
-    # Step 3: Install Sequent Microsystems drivers
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh", 3, total_steps, "Installing Sequent Microsystems drivers...")
     sleep(5)
 
-    # Step 4: Install Node-RED interactively with prompts
     run_shell_command("lxterminal -e 'bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh'", 4, total_steps, "Installing Node-RED interactively with prompts...")
     sleep(5)
 
-    # Step 5: Install Node-RED palettes
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh", 5, total_steps, "Installing Node-RED palettes...")
     sleep(5)
 
-    # Step 6: Move splash.png and set it as wallpaper and splash screen
     run_shell_command("sudo mv /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/splash.png", 6, total_steps, "Moving splash.png to /home/Automata...")
     sleep(5)
 
-    # Set splash.png as wallpaper and splash screen
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_full_logo_image_rpi4.sh", 6, total_steps, "Setting splash.png as wallpaper and splash screen...")
     sleep(5)
 
-    # Step 7: Enable I2C, SPI, RealVNC, 1-Wire, disable serial port
     run_shell_command("sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_serial 1", 7, total_steps, "Enabling I2C, SPI, RealVNC, disabling serial port...")
     sleep(5)
 
-    # Step 8: Install Mosquitto and set password file
     run_shell_command("sudo apt-get install -y mosquitto mosquitto-clients", 8, total_steps, "Installing Mosquitto...")
-    run_shell_command("sudo mkdir -p /etc/mosquitto && sudo touch /etc/mosquitto/passwd && sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2", 8, total_steps, "Setting Mosquitto password file...")
+    run_shell_command("sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2", 8, total_steps, "Setting Mosquitto password file...")
     sleep(5)
 
-    # Step 9: Increase swap size
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh", 9, total_steps, "Increasing swap size...")
     sleep(5)
 
-    # Step 10: Create the desktop icon for updating SMBoards
-    run_shell_command("mkdir -p /home/Automata/.config/lxsession/LXDE-pi && echo '@/home/Automata/update_sequent_boards.sh' >> /home/Automata/.config/lxsession/LXDE-pi/autostart", 10, total_steps, "Ensuring autostart directory exists and adding board update auto-start...")
-
-    # Step 11: Installation complete
     update_progress(11, total_steps, "Installation complete. Please reboot.")
-
-    # Show final message after reboot
     show_reboot_prompt()
 
-# Function to show final reboot prompt
 def show_reboot_prompt():
-    root.withdraw()  # Hide the main window
+    root.withdraw()
     final_window = tk.Tk()
     final_window.title("Installation Complete")
     final_window.geometry("600x400")
@@ -125,7 +100,6 @@ def show_reboot_prompt():
     final_message = tk.Label(final_window, text="A New Realm of Automation Awaits!\nPlease reboot to finalize settings and config files.\n\nReboot Now?", font=("Helvetica", 14), fg="orange", bg="#2e2e2e")
     final_message.pack(pady=20)
 
-    # Reboot and Exit buttons
     button_frame = tk.Frame(final_window, bg='#2e2e2e')
     button_frame.pack(pady=20)
 
@@ -137,35 +111,48 @@ def show_reboot_prompt():
 
     final_window.mainloop()
 
-# Start the installation in a separate thread to keep GUI responsive
 threading.Thread(target=run_installation_steps).start()
-
-# Tkinter loop runs in the background while install runs
 root.mainloop()
 EOF
 
-# Step 4: Start the Tkinter GUI in the background
-python3 $INSTALL_GUI &
+# Step 4: Set up Chromium Auto-launch on reboot using systemd
+AUTO_LAUNCH_SCRIPT="/home/Automata/launch_chromium.py"
+cat << 'EOF' > $AUTO_LAUNCH_SCRIPT
+import time
+import subprocess
 
-# Installation steps as before
+# Wait for the network to connect
+while True:
+    try:
+        subprocess.check_call(['ping', '-c', '1', '127.0.0.1'])
+        break
+    except subprocess.CalledProcessError:
+        time.sleep(1)
 
-# Step 10: Create the desktop icon for updating SMBoards
-echo "Creating desktop icon for updating SMBoards..."
-DESKTOP_FILE="/home/Automata/Desktop/Update_SMBoards.desktop"
-cat << 'EOF' > $DESKTOP_FILE
-[Desktop Entry]
-Name=Click to Update SMBoards
-Comment=Runs the SMBoards update script with a progress GUI
-Exec=/home/Automata/update_sequent_boards.sh
-Icon=utilities-terminal
-Terminal=false
-Type=Application
+# Wait additional time for services to load
+time.sleep(15)
+
+# Launch Chromium in windowed mode
+subprocess.Popen(['chromium-browser', '--disable-features=KioskMode', '--new-window', 'http://127.0.0.1:1880/', 'http://127.0.0.1:1880/ui'])
 EOF
 
-# Set permissions
-chmod +x $DESKTOP_FILE
+# Create systemd service
+cat << 'EOF' > /etc/systemd/system/chromium-launch.service
+[Unit]
+Description=Auto-launch Chromium at boot
+After=network.target
 
-# Step 11: Installation complete
-echo "Installation complete. Please reboot."
+[Service]
+ExecStart=/usr/bin/python3 /home/Automata/launch_chromium.py
+User=Automata
+Environment=DISPLAY=:0
+Restart=always
 
+[Install]
+WantedBy=multi-user.target
+EOF
 
+# Enable the service
+systemctl enable chromium-launch.service
+
+# Reboot prompt handled in the GUI
