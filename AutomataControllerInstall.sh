@@ -1,5 +1,3 @@
-
-
 #!/bin/bash
 
 # Step 1: Ensure the script is running as root
@@ -24,7 +22,7 @@ import tkinter as tk
 from tkinter import ttk
 import subprocess
 import threading
-from time import sleep  # Import sleep to avoid the error
+from time import sleep
 
 # Create the main window
 root = tk.Tk()
@@ -61,7 +59,7 @@ def run_shell_command(command, step, total_steps, message):
         root.update_idletasks()
 
 def run_installation_steps():
-    total_steps = 12  # Updated step count
+    total_steps = 12
 
     # Step 1: Disable screen blanking
     run_shell_command("sudo raspi-config nonint do_blanking 1", 1, total_steps, "Disabling screen blanking...")
@@ -84,7 +82,11 @@ def run_installation_steps():
     sleep(5)
 
     # Step 6: Move splash.png and set it as wallpaper and splash screen
-    run_shell_command("sudo mv /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/ && bash /home/Automata/AutomataBuildingManagment-HvacController/set_full_logo_image_rpi4.sh", 6, total_steps, "Moving splash.png and setting it as wallpaper and splash screen...")
+    run_shell_command("sudo mv /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/splash.png", 6, total_steps, "Moving splash.png to /home/Automata...")
+    sleep(5)
+
+    # Set splash.png as wallpaper and splash screen
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_full_logo_image_rpi4.sh", 6, total_steps, "Setting splash.png as wallpaper and splash screen...")
     sleep(5)
 
     # Step 7: Enable I2C, SPI, RealVNC, 1-Wire, disable serial port
@@ -145,3 +147,4 @@ EOF
 
 # Step 4: Start the Tkinter GUI in the background
 python3 $INSTALL_GUI
+
