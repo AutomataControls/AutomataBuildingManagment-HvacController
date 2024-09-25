@@ -12,10 +12,11 @@ import tkinter as tk
 from tkinter import ttk
 import subprocess
 import threading
+import os
 
 # Create the main window
 root = tk.Tk()
-root.title("Automata Update Progress")
+root.title("Automata Board Updates")
 
 # Set window size and position
 root.geometry("600x400")
@@ -45,9 +46,21 @@ def run_shell_command(command, step, total_steps, message):
     subprocess.Popen(command, shell=True).wait()
 
 def run_update_steps():
-    total_steps = 5  # Total steps in the update process
+    total_steps = 7  # Total steps in the update process
+    success = False  # Track if at least one board update succeeds
 
-    # Step 1: Update Sequent boards
+    # Step 1: Stop Node-RED services and Node-RED runtime
+    update_progress(1, total_steps, "Stopping Node-RED services...")
+    
+    # Stop Node-RED system service if running
+    if subprocess.run("systemctl list-units --full -all | grep -q 'nodered.service'", shell=True).returncode == 0:
+        run_shell_command("sudo systemctl stop nodered.service && sudo systemctl disable nodered.service", 1, total_steps, "Stopping Node-RED system service...")
+
+    # Run node-red-stop if available
+    if subprocess.run("command -v node-red-stop", shell=True).returncode == 0:
+        run_shell_command("node-red-stop", 2, total_steps, "Stopping Node-RED runtime...")
+
+    # Step 2: Update Sequent boards
     boards = [
         "/home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi/update",
         "/home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi/update",
@@ -55,15 +68,20 @@ def run_update_steps():
         "/home/Automata/AutomataBuildingManagment-HvacController/16relind-rpi/update",
         "/home/Automata/AutomataBuildingManagment-HvacController/8relind-rpi/update"
     ]
-    step = 1
+    step = 3
     for board in boards:
         if os.path.isdir(board):
-            run_shell_command(f"cd {board} && ./update 0", step, total_steps, f"Updating board in {board}")
+            result = subprocess.run(f"cd {board} && ./update 0", shell=True)
+            if result.returncode == 0:
+                success = True  # Mark success if at least one update succeeds
+                update_progress(step, total_steps, f"Successfully updated board in {board}")
+            else:
+                update_progress(step, total_steps, f"Failed to update board in {board}")
         else:
             update_progress(step, total_steps, f"Board directory {board} not found.")
         step += 1
 
-    # Step 2: Create permanent Chromium auto-start
+    # Step 3: Create permanent Chromium auto-start
     update_progress(step, total_steps, "Creating permanent Chromium auto-start script...")
     with open("/home/Automata/launch_chromium_permanent.sh", "w") as f:
         f.write('''
@@ -90,15 +108,21 @@ chromium-browser --disable-features=KioskMode --new-window http://127.0.0.1:1880
     step += 1
     update_progress(step, total_steps, "Permanent Chromium auto-start script created.")
 
-    # Step 3: Remove the temporary script from auto-start
-    update_progress(step, total_steps, "Removing temporary auto-start entry...")
-    subprocess.run("sed -i '/update_sequent_boards.sh/d' /home/Automata/.config/lxsession/LXDE-pi/autostart", shell=True)
-    
-    step += 1
-    update_progress(step, total_steps, "Temporary auto-start entry removed. Rebooting now...")
+    # Step 4: Remove the temporary auto-start entry if successful
+    if success:
+        update_progress(step, total_steps, "Removing temporary auto-start entry...")
+        subprocess.run("sed -i '/update_sequent_boards.sh/d' /home/Automata/.config/lxsession/LXDE-pi/autostart", shell=True)
+        step += 1
+        update_progress(step, total_steps, "Temporary auto-start entry removed.")
 
-    # Step 4: Reboot the system after all updates
-    subprocess.run("sudo reboot", shell=True)
+    # Step 5: Show success message and reboot prompt
+    if success:
+        status_label.config(text="Updates completed successfully! Rebooting now...")
+    else:
+        status_label.config(text="No updates were applied. Rebooting now...")
+
+    # Add a reboot prompt
+    root.after(5000, lambda: subprocess.run("sudo reboot", shell=True))
 
 # Run updates in a separate thread to keep GUI responsive
 threading.Thread(target=run_update_steps).start()
@@ -109,4 +133,5 @@ EOF
 
 # Step 3: Start the Tkinter GUI for the update process
 python3 $UPDATE_GUI
+
 
