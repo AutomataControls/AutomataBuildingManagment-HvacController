@@ -58,7 +58,7 @@ EOF
 python3 $INSTALL_GUI &
 GUI_PID=$!
 
-# Helper function to update progress in the GUI
+# Function to update the GUI
 update_gui() {
     STEP=$1
     TOTAL=$2
@@ -75,6 +75,8 @@ status_label = tk.Label(root, text='$MESSAGE')
 status_label.config(text='$MESSAGE')
 root.update_idletasks()
 " 2>/dev/null
+    echo "$MESSAGE"
+    sleep 2  # Allow time for the UI to update
 }
 
 # Total steps for installation (estimate)
