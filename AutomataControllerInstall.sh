@@ -63,48 +63,37 @@ def run_installation_steps():
 
     # Step 1: Disable screen blanking
     run_shell_command("sudo raspi-config nonint do_blanking 1", 1, total_steps, "Disabling screen blanking...")
-    sleep(5)
 
     # Step 2: Set Internet Time with Eastern Standard Time
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_internet_time_rpi4.sh", 2, total_steps, "Setting system time to Eastern Standard Time...")
-    sleep(5)
 
     # Step 3: Install Sequent Microsystems drivers
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh", 3, total_steps, "Installing Sequent Microsystems drivers...")
-    sleep(5)
 
     # Step 4: Install Node-RED interactively with prompts
     run_shell_command("lxterminal -e 'bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh'", 4, total_steps, "Installing Node-RED interactively with prompts...")
-    sleep(5)
 
     # Step 5: Install Node-RED palettes
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh", 5, total_steps, "Installing Node-RED palettes...")
-    sleep(5)
 
     # Step 6: Move splash.png and set it as wallpaper and splash screen
     run_shell_command("sudo mv /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/splash.png", 6, total_steps, "Moving splash.png to /home/Automata...")
-    sleep(5)
 
     # Set splash.png as wallpaper and splash screen
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_full_logo_image_rpi4.sh", 6, total_steps, "Setting splash.png as wallpaper and splash screen...")
-    sleep(5)
 
     # Step 7: Enable I2C, SPI, RealVNC, 1-Wire, disable serial port
     run_shell_command("sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_serial 1", 7, total_steps, "Enabling I2C, SPI, RealVNC, disabling serial port...")
-    sleep(5)
 
     # Step 8: Install Mosquitto and set password file
     run_shell_command("sudo apt-get install -y mosquitto mosquitto-clients", 8, total_steps, "Installing Mosquitto...")
     run_shell_command("sudo mkdir -p /etc/mosquitto && sudo touch /etc/mosquitto/passwd && sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2", 8, total_steps, "Setting Mosquitto password file...")
-    sleep(5)
 
     # Step 9: Increase swap size
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh", 9, total_steps, "Increasing swap size...")
-    sleep(5)
 
     # Step 10: Ensure autostart directory exists and add auto-start entry
     run_shell_command("mkdir -p /home/Automata/.config/lxsession/LXDE-pi && echo '@/home/Automata/update_sequent_boards.sh' >> /home/Automata/.config/lxsession/LXDE-pi/autostart", 10, total_steps, "Ensuring autostart directory exists and adding board update auto-start...")
-    sleep(5)
 
     # Step 11: Installation complete
     update_progress(11, total_steps, "Installation complete. Please reboot.")
