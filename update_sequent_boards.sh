@@ -1,58 +1,112 @@
 #!/bin/bash
 
-# Step 0: Stop Node-RED system service and Node-RED runtime if running
+# Step 1: Install necessary dependencies for the GUI
+sudo apt-get update
+sudo apt-get install -y python3-tk python3-pil python3-pil.imagetk
 
-# Check if Node-RED service is running and stop it
-if systemctl is-active --quiet nodered; then
-    echo "Stopping Node-RED service..."
-    sudo systemctl stop nodered
-fi
+# Step 2: Create the Python GUI script with progress bar and status updates
+UPDATE_GUI="/home/Automata/update_progress_gui.py"
 
-# Run node-red-stop to ensure Node-RED stops completely
-if command -v node-red-stop &> /dev/null; then
-    echo "Stopping Node-RED runtime..."
-    node-red-stop
-else
-    echo "node-red-stop command not found, skipping..."
-fi
+cat << 'EOF' > $UPDATE_GUI
+import tkinter as tk
+from tkinter import ttk
+import subprocess
+import threading
 
-# Define paths for each Sequent board update folder
-BOARDS=(
-    "/home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi/update"
-    "/home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi/update"
-    "/home/Automata/AutomataBuildingManagment-HvacController/16univin-rpi/update"
-    "/home/Automata/AutomataBuildingManagment-HvacController/16relind-rpi/update"
-    "/home/Automata/AutomataBuildingManagment-HvacController/8relind-rpi/update"
-)
+# Create the main window
+root = tk.Tk()
+root.title("Automata Update Progress")
 
-# Update all boards
-echo "Starting Sequent Microsystems board updates..."
+# Set window size and position
+root.geometry("600x400")
+root.configure(bg='#2e2e2e')  # Dark grey background
 
-for BOARD_PATH in "${BOARDS[@]}"; do
-    if [ -d "$BOARD_PATH" ]; then
-        echo "Updating board in: $BOARD_PATH"
-        cd "$BOARD_PATH" && sudo ./update 0
-        if [ $? -eq 0 ]; then
-            echo "Successfully updated board in: $BOARD_PATH"
-        else
-            echo "Failed to update board in: $BOARD_PATH"
-        fi
-    else
-        echo "Error: Update folder not found at $BOARD_PATH"
-    fi
+# Title message
+label = tk.Label(root, text="Automata Board Updates", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
+label.pack(pady=20)
+
+# Progress bar
+progress = ttk.Progressbar(root, orient="horizontal", length=500, mode="determinate")
+progress.pack(pady=20)
+
+# Status message
+status_label = tk.Label(root, text="Starting updates...", font=("Helvetica", 12), fg="orange", bg="#2e2e2e")
+status_label.pack(pady=10)
+
+# Update progress function
+def update_progress(step, total_steps, message):
+    progress['value'] = (step / total_steps) * 100
+    status_label.config(text=message)
+    root.update_idletasks()
+
+# Function to run shell commands in a separate thread
+def run_shell_command(command, step, total_steps, message):
+    update_progress(step, total_steps, message)
+    subprocess.Popen(command, shell=True).wait()
+
+def run_update_steps():
+    total_steps = 5  # Total steps in the update process
+
+    # Step 1: Update Sequent boards
+    boards = [
+        "/home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi/update",
+        "/home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi/update",
+        "/home/Automata/AutomataBuildingManagment-HvacController/16univin-rpi/update",
+        "/home/Automata/AutomataBuildingManagment-HvacController/16relind-rpi/update",
+        "/home/Automata/AutomataBuildingManagment-HvacController/8relind-rpi/update"
+    ]
+    step = 1
+    for board in boards:
+        if os.path.isdir(board):
+            run_shell_command(f"cd {board} && ./update 0", step, total_steps, f"Updating board in {board}")
+        else:
+            update_progress(step, total_steps, f"Board directory {board} not found.")
+        step += 1
+
+    # Step 2: Create permanent Chromium auto-start
+    update_progress(step, total_steps, "Creating permanent Chromium auto-start script...")
+    with open("/home/Automata/launch_chromium_permanent.sh", "w") as f:
+        f.write('''
+#!/bin/bash
+# Wait for the network to be connected
+while ! ping -c 1 127.0.0.1 &>/dev/null; do
+    sleep 1
 done
 
-# Prompt for reboot using a Zenity dialog box (removed custom color schemes to avoid issues)
-DIALOG_TITLE="Sequent Microsystems Update"
-DIALOG_TEXT="All Sequent Microsystems boards have been updated successfully. Do you want to reboot now?"
+# Wait for an additional 10 seconds after network connection
+sleep 10
 
-# Display the dialog box
-zenity --question --title="$DIALOG_TITLE" --text="$DIALOG_TEXT" --width=400 --height=300 --ok-label="Reboot Now" --cancel-label="Later"
+# Launch Chromium in windowed mode
+chromium-browser --disable-features=KioskMode --new-window http://127.0.0.1:1880/ http://127.0.0.1:1880/ui
+''')
+    subprocess.run("chmod +x /home/Automata/launch_chromium_permanent.sh", shell=True)
 
-# Check user's choice
-if [ $? -eq 0 ]; then
-    echo "Rebooting the system..."
-    sudo reboot
-else
-    echo "Reboot canceled."
-fi
+    autostart_file = "/home/Automata/.config/lxsession/LXDE-pi/autostart"
+    subprocess.run(f'mkdir -p $(dirname "{autostart_file}")', shell=True)
+    with open(autostart_file, "a") as f:
+        if 'launch_chromium_permanent.sh' not in f.read():
+            f.write("@/home/Automata/launch_chromium_permanent.sh\n")
+
+    step += 1
+    update_progress(step, total_steps, "Permanent Chromium auto-start script created.")
+
+    # Step 3: Remove the temporary script from auto-start
+    update_progress(step, total_steps, "Removing temporary auto-start entry...")
+    subprocess.run("sed -i '/update_sequent_boards.sh/d' /home/Automata/.config/lxsession/LXDE-pi/autostart", shell=True)
+    
+    step += 1
+    update_progress(step, total_steps, "Temporary auto-start entry removed. Rebooting now...")
+
+    # Step 4: Reboot the system after all updates
+    subprocess.run("sudo reboot", shell=True)
+
+# Run updates in a separate thread to keep GUI responsive
+threading.Thread(target=run_update_steps).start()
+
+# Tkinter loop runs in the background while updates are processed
+root.mainloop()
+EOF
+
+# Step 3: Start the Tkinter GUI for the update process
+python3 $UPDATE_GUI
+
