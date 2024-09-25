@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # Ensure the script is running as root
@@ -14,7 +15,6 @@ echo "Installation started at: $(date)"
 
 # Step 1: Check if LXTerminal or Gnome-Terminal is installed
 echo "Checking for a fully-featured terminal..."
-
 if command -v lxterminal &> /dev/null; then
     TERMINAL="lxterminal"
     echo "LXTerminal detected. Running the rest of the script in LXTerminal."
@@ -33,8 +33,6 @@ if [ -z "$LXTERMINAL_STARTED" ]; then
     wait
     exit 0
 fi
-
-# ----------------------- Remaining Script Logic Starts Here -----------------------
 
 # Step 2: Stop services if running
 echo "Stopping and disabling conflicting services..."
@@ -71,18 +69,24 @@ sudo apt-get install -y feh
 echo "Setting executable permissions for all scripts..."
 sudo chmod -R +x /home/Automata/AutomataBuildingManagment-HvacController/*.sh
 
-# Step 6: Set system clock to local internet time and correct timezone
-echo "Skipping NTP setup, manually setting the timezone..."
-sudo timedatectl set-timezone America/New_York
+# Step 6: Move FullLogo.png from the repository to the home directory
+LOGO_SRC="/home/Automata/AutomataBuildingManagment-HvacController/FullLogo.png"
+LOGO_DEST="/home/Automata/FullLogo.png"
+
+if [ -f "$LOGO_SRC" ]; then
+    echo "Moving FullLogo.png to home directory..."
+    sudo mv "$LOGO_SRC" "$LOGO_DEST"
+else
+    echo "Error: $LOGO_SRC not found."
+fi
 
 # Step 7: Set FullLogo.png as desktop wallpaper and splash screen
-LOGO_PATH="/home/Automata/FullLogo.png"
-if [ -f "$LOGO_PATH" ]; then
+if [ -f "$LOGO_DEST" ]; then
     echo "Setting logo as wallpaper and splash screen..."
-    sudo -u Automata DISPLAY=:0 pcmanfm --set-wallpaper="$LOGO_PATH" || echo "Warning: Could not set wallpaper."
-    sudo cp "$LOGO_PATH" /usr/share/plymouth/themes/pix/splash.png
+    sudo -u Automata DISPLAY=:0 pcmanfm --set-wallpaper="$LOGO_DEST" || echo "Warning: Could not set wallpaper."
+    sudo cp "$LOGO_DEST" /usr/share/plymouth/themes/pix/splash.png
 else
-    echo "Error: $LOGO_PATH not found."
+    echo "Error: $LOGO_DEST not found."
 fi
 
 # Step 8: Enable I2C, SPI, RealVNC, 1-Wire, Remote GPIO, and disable serial port
@@ -149,28 +153,76 @@ chmod +x /home/Automata/AutomataBuildingManagment-HvacController/InstallChromium
 # Run the Chromium auto-start script
 /home/Automata/AutomataBuildingManagment-HvacController/InstallChromiumAutoStart.sh
 
-# Step 14: Create one-time autostart entry for update_sequent_boards.sh
-echo "Creating one-time autostart entry for update_sequent_boards.sh..."
+# Step 14: Create one-time autostart entry for board updates
+
+# Define the autostart file path
+AUTOSTART_FILE="/home/Automata/.config/lxsession/LXDE-pi/autostart"
+
+# Ensure the .config/lxsession/LXDE-pi directory exists
+if [ ! -d "/home/Automata/.config/lxsession/LXDE-pi" ]; then
+    echo "Creating autostart directory..."
+    mkdir -p "/home/Automata/.config/lxsession/LXDE-pi"
+fi
+
+# Remove any existing entry for update_sequent_boards.sh from autostart
+if grep -q 'update_sequent_boards.sh' "$AUTOSTART_FILE"; then
+    echo "Removing old update_sequent_boards.sh entry from autostart..."
+    sed -i '/update_sequent_boards.sh/d' "$AUTOSTART_FILE"
+fi
+
+# Define the script to update Sequent boards
 cat << 'EOF' > /home/Automata/update_sequent_boards.sh
 #!/bin/bash
 
-# Run the update script
-/home/Automata/AutomataBuildingManagment-HvacController/update_sequent_boards.sh
+# Define paths for each Sequent board update folder
+BOARDS=(
+    "/home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi/update"
+    "/home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi/update"
+    "/home/Automata/AutomataBuildingManagment-HvacController/16univin-rpi/update"
+    "/home/Automata/AutomataBuildingManagment-HvacController/16relind-rpi/update"
+    "/home/Automata/AutomataBuildingManagment-HvacController/8relind-rpi/update"
+)
 
-# Remove this script from autostart to only run once
-AUTOSTART_FILE="/home/Automata/.config/lxsession/LXDE-pi/autostart"
+# Iterate over each board directory and run the update script
+for board in "${BOARDS[@]}"; do
+    if [ -d "$board" ]; then
+        echo "Updating board in $board"
+        (cd "$board" && ./update 0) || echo "Warning: Update failed in $board"
+    else
+        echo "Error: Board directory $board not found."
+    fi
+done
+
+# Remove this script from autostart to prevent it from running again
 sed -i '/update_sequent_boards.sh/d' "$AUTOSTART_FILE"
+
 EOF
 
-# Make it executable
+# Make the update script executable
 chmod +x /home/Automata/update_sequent_boards.sh
 
-# Add to autostart
-if ! grep -q 'update_sequent_boards.sh' "/home/Automata/.config/lxsession/LXDE-pi/autostart"; then
-    echo "@/home/Automata/update_sequent_boards.sh" >> "/home/Automata/.config/lxsession/LXDE-pi/autostart"
+# Add the update script to autostart if not already added
+if ! grep -q 'update_sequent_boards.sh' "$AUTOSTART_FILE"; then
+    echo "@/home/Automata/update_sequent_boards.sh" >> "$AUTOSTART_FILE"
+    echo "Added update_sequent_boards.sh to autostart."
+else
+    echo "update_sequent_boards.sh is already in autostart."
 fi
 
-# Final message before reboot
-echo "Installation completed. The system will reboot in 10 seconds."
-sleep 10
-sudo reboot
+# Step 15: Display teal dialog box with final message using Zenity
+echo "Displaying final message before reboot..."
+
+zenity --question \
+--title="Automata BMS Installation Complete" \
+--width=400 --height=300 \
+--text="<span font='16' foreground='black'><b>Congratulations,</b> Automata BMS Has Successfully Installed.\n\nA New Realm of Automation Awaits!\nPlease Reboot to Finalize Settings.\n\n<b>Reboot Now?</b></span>" \
+--ok-label="Yes" \
+--cancel-label="No" \
+--icon-name="$LOGO_DEST" --window-icon="$LOGO_DEST" --timeout=30 --no-wrap --background="#00b3b3"
+
+if [ $? = 0 ]; then
+    echo "Rebooting system..."
+    sudo reboot
+else
+    echo "Installation completed without reboot. Please reboot manually."
+fi
