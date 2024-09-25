@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # Step 1: Ensure the script is running as root
@@ -12,12 +13,12 @@ LOGFILE="/home/Automata/install_log.txt"
 exec > >(tee -i "$LOGFILE") 2>&1
 echo "Installation started at: $(date)"
 
-# Step 3: Install required dependencies for Tkinter and Pillow
-echo "Installing Tkinter and Pillow..."
+# Step 3: Install necessary dependencies for Tkinter, Chromium, and Pillow
+echo "Installing dependencies for GUI and Chromium..."
 sudo apt-get update
-sudo apt-get install -y python3-tk python3-pil python3-pil.imagetk
+sudo apt-get install -y python3-tk python3-pil python3-pil.imagetk chromium-browser
 
-# Step 4: Create a Python script for the Tkinter GUI with progress bar and async execution
+# Step 4: Create the Python GUI script for the installation progress
 INSTALL_GUI="/home/Automata/install_progress_gui.py"
 
 cat << 'EOF' > $INSTALL_GUI
@@ -28,7 +29,7 @@ import threading
 
 # Create the main window
 root = tk.Tk()
-root.title("Automata Installation")
+root.title("Automata Installation Progress")
 
 # Set window size and position
 root.geometry("600x400")
@@ -63,17 +64,17 @@ def run_installation_steps():
     # Step 1: Install Sequent Microsystems drivers
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh", 1, total_steps, "Installing Sequent Microsystems drivers...")
 
-    # Step 2: Install Node-RED
+    # Step 2: Install Node-RED and its palettes
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", 2, total_steps, "Installing Node-RED and palettes...")
 
-    # Step 3: Set up Chromium auto-start
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/InstallChromiumAutoStart.sh", 3, total_steps, "Setting up Chromium auto-start...")
+    # Step 3: Set up Chromium auto-start (temporary for now)
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/InstallChromiumAutoStart.sh", 3, total_steps, "Setting up temporary Chromium auto-start...")
 
-    # Step 4: Set wallpaper and splash screen
-    run_shell_command("sudo mv /home/Automata/AutomataBuildingManagment-HvacController/FullLogo.png /home/Automata/FullLogo.png && sudo -u Automata DISPLAY=:0 pcmanfm --set-wallpaper='/home/Automata/FullLogo.png' && sudo cp /home/Automata/FullLogo.png /usr/share/plymouth/themes/pix/splash.png", 4, total_steps, "Setting up wallpaper and splash screen...")
+    # Step 4: Set FullLogo.png as wallpaper and splash screen
+    run_shell_command("sudo mv /home/Automata/AutomataBuildingManagment-HvacController/FullLogo.png /home/Automata/FullLogo.png && sudo -u Automata DISPLAY=:0 pcmanfm --set-wallpaper='/home/Automata/FullLogo.png' && sudo cp /home/Automata/FullLogo.png /usr/share/plymouth/themes/pix/splash.png", 4, total_steps, "Setting wallpaper and splash screen...")
 
-    # Step 5: Enable I2C, SPI, RealVNC, and more
-    run_shell_command("sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_serial 1", 5, total_steps, "Enabling I2C, SPI, RealVNC, and more...")
+    # Step 5: Enable I2C, SPI, RealVNC, 1-Wire, disable serial port
+    run_shell_command("sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_serial 1", 5, total_steps, "Enabling I2C, SPI, RealVNC, disabling serial port...")
 
     # Step 6: Install Mosquitto
     run_shell_command("sudo apt-get install -y mosquitto mosquitto-clients && sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2", 6, total_steps, "Installing Mosquitto...")
@@ -81,8 +82,8 @@ def run_installation_steps():
     # Step 7: Increase swap size
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh", 7, total_steps, "Increasing swap size...")
 
-    # Step 8: Add board updates to autostart
-    run_shell_command("bash /home/Automata/update_sequent_boards.sh", 8, total_steps, "Adding board updates to autostart...")
+    # Step 8: Add board update to auto-start for first reboot
+    run_shell_command("bash /home/Automata/update_sequent_boards.sh", 8, total_steps, "Setting up board updates...")
 
     # Step 9: Installation complete
     update_progress(9, total_steps, "Installation complete. Please reboot.")
@@ -116,7 +117,7 @@ def show_reboot_prompt():
 
     final_window.mainloop()
 
-# Start the installation in a separate thread
+# Start the installation in a separate thread to keep GUI responsive
 threading.Thread(target=run_installation_steps).start()
 
 # Tkinter loop runs in the background while install runs
