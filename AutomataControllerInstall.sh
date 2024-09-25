@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # Step 1: Ensure the script is running as root
@@ -143,3 +142,4 @@ EOF
 
 # Step 4: Start the Tkinter GUI in the background
 python3 $INSTALL_GUI
+
