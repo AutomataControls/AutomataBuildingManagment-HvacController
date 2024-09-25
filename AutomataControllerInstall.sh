@@ -17,226 +17,192 @@ echo "Installing Tkinter and Pillow..."
 sudo apt-get update
 sudo apt-get install -y python3-tk python3-pil python3-pil.imagetk
 
-# Step 4: Create a Python script for the Tkinter GUI welcome dialog
-WELCOME_SCRIPT="/home/Automata/welcome_install_gui.py"
+# Step 4: Create a Python script for the Tkinter GUI with progress bar
+INSTALL_GUI="/home/Automata/install_progress_gui.py"
 
-cat << 'EOF' > $WELCOME_SCRIPT
+cat << 'EOF' > $INSTALL_GUI
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import ttk
 
 # Create the main window
 root = tk.Tk()
 root.title("Automata Installation")
 
 # Set window size and position
-root.geometry("500x300")
+root.geometry("600x400")
 root.configure(bg='#2e2e2e')  # Dark grey background
 
-# Welcome message
-label = tk.Label(root, text="Welcome to Automata Installation", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
+# Title message
+label = tk.Label(root, text="Automata Installation Progress", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
 label.pack(pady=20)
 
-# Instructions message
-instructions = tk.Label(root, text="This process will take approximately 5-15 minutes.\nHuman interaction will be necessary to complete.\n\nDo you want to continue?", font=("Helvetica", 12), fg="orange", bg="#2e2e2e")
-instructions.pack(pady=10)
+# Progress bar
+progress = ttk.Progressbar(root, orient="horizontal", length=500, mode="determinate")
+progress.pack(pady=20)
 
-# User response handling
-def on_continue():
-    root.destroy()
-    exit(0)
+# Status message
+status_label = tk.Label(root, text="Starting installation...", font=("Helvetica", 12), fg="orange", bg="#2e2e2e")
+status_label.pack(pady=10)
 
-def on_exit():
-    messagebox.showinfo("Installation Aborted", "The installation has been aborted.")
-    root.destroy()
-    exit(1)
+# Update progress function
+def update_progress(step, total_steps, message):
+    progress['value'] = (step / total_steps) * 100
+    status_label.config(text=message)
+    root.update_idletasks()
 
-# Continue and Exit buttons
-button_frame = tk.Frame(root, bg='#2e2e2e')
-button_frame.pack(pady=20)
-
-continue_button = tk.Button(button_frame, text="Yes", font=("Helvetica", 12), command=on_continue, bg='#00b3b3', fg="black", width=10)
-continue_button.grid(row=0, column=0, padx=10)
-
-exit_button = tk.Button(button_frame, text="No", font=("Helvetica", 12), command=on_exit, bg='orange', fg="black", width=10)
-exit_button.grid(row=0, column=1, padx=10)
-
-# Start the Tkinter main loop
+# Tkinter loop runs in the background while install runs
 root.mainloop()
 EOF
 
-# Step 5: Run the Tkinter GUI welcome dialog
-python3 $WELCOME_SCRIPT
+# Step 5: Start the Tkinter GUI in the background
+python3 $INSTALL_GUI &
+GUI_PID=$!
 
-# If the user chose to exit, the script will stop here
-if [ $? -ne 0 ]; then
-    echo "Installation aborted by the user."
-    exit 1
-fi
+# Helper function to update progress in the GUI
+update_gui() {
+    STEP=$1
+    TOTAL=$2
+    MESSAGE=$3
+    python3 -c "
+import tkinter as tk
+from tkinter import ttk
+root = tk.Tk()
+root.update_idletasks()
+progress = ttk.Progressbar(root, orient='horizontal', length=500, mode='determinate')
+progress['value'] = ($STEP / $TOTAL) * 100
+root.update_idletasks()
+status_label = tk.Label(root, text='$MESSAGE')
+status_label.config(text='$MESSAGE')
+root.update_idletasks()
+" 2>/dev/null
+}
 
-# Step 6: Ensure the DISPLAY environment variable is set
-export DISPLAY=:0
+# Total steps for installation (estimate)
+TOTAL_STEPS=10
 
-# Step 7: Stop services if running
-echo "Stopping and disabling conflicting services..."
-if systemctl is-active --quiet nodered; then
-    sudo systemctl stop nodered
-fi
-if systemctl is-active --quiet mosquitto; then
-    sudo systemctl stop mosquitto
-fi
-if systemctl is-enabled --quiet nodered; then
-    sudo systemctl disable nodered
-fi
-if systemctl is-enabled --quiet mosquitto; then
-    sudo systemctl disable mosquitto
-fi
-sudo rm -f /etc/mosquitto/passwd || echo "No previous Mosquitto password file to remove"
+# Step 6: Install Sequent Microsystems drivers (Progress: 1/10)
+update_gui 1 $TOTAL_STEPS "Installing Sequent Microsystems drivers..."
+echo "Installing Sequent Microsystems drivers..."
 
-# Step 8: Set executable permissions for all scripts in the repository
-echo "Setting executable permissions for all scripts..."
-sudo chmod -R +x /home/Automata/AutomataBuildingManagment-HvacController/*.sh
+# Clone and install megabas-rpi
+git clone https://github.com/SequentMicrosystems/megabas-rpi.git /home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi
+cd /home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi
+sudo make install || { echo "megabas-rpi installation failed"; exit 1; }
 
-# Step 9: Move FullLogo.png from the repository to the home directory
+# Clone and install megaind-rpi
+git clone https://github.com/SequentMicrosystems/megaind-rpi.git /home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi
+cd /home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi
+sudo make install || { echo "megaind-rpi installation failed"; exit 1; }
+
+# Step 7: Install Node-RED and Node-RED Palettes (Progress: 2/10)
+update_gui 2 $TOTAL_STEPS "Installing Node-RED and palettes..."
+echo "Installing Node-RED and palettes..."
+
+# Install Node-RED and required nodes
+bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh
+bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh
+
+# Step 8: Set up Chromium auto-start (Progress: 3/10)
+update_gui 3 $TOTAL_STEPS "Setting up Chromium auto-start..."
+echo "Setting up Chromium auto-start..."
+
+# Add Chromium auto-start
+bash /home/Automata/AutomataBuildingManagment-HvacController/InstallChromiumAutoStart.sh
+
+# Step 9: Move FullLogo.png and set it as wallpaper and splash screen (Progress: 4/10)
+update_gui 4 $TOTAL_STEPS "Setting up logo as wallpaper and splash screen..."
+echo "Setting up logo as wallpaper and splash screen..."
+
 LOGO_SRC="/home/Automata/AutomataBuildingManagment-HvacController/FullLogo.png"
 LOGO_DEST="/home/Automata/FullLogo.png"
 
 if [ -f "$LOGO_SRC" ]; then
-    echo "Moving FullLogo.png to home directory..."
     sudo mv "$LOGO_SRC" "$LOGO_DEST"
-else
-    echo "Error: $LOGO_SRC not found."
-fi
-
-# Step 10: Set FullLogo.png as desktop wallpaper and splash screen
-if [ -f "$LOGO_DEST" ]; then
-    echo "Setting logo as wallpaper and splash screen..."
-    sudo -u Automata DISPLAY=:0 pcmanfm --set-wallpaper="$LOGO_DEST" || echo "Warning: Could not set wallpaper."
+    sudo -u Automata DISPLAY=:0 pcmanfm --set-wallpaper="$LOGO_DEST"
     sudo cp "$LOGO_DEST" /usr/share/plymouth/themes/pix/splash.png
 else
-    echo "Error: $LOGO_DEST not found."
+    echo "Error: FullLogo.png not found."
 fi
 
-# Step 11: Enable I2C, SPI, RealVNC, 1-Wire, Remote GPIO, and disable serial port
-echo "Enabling I2C, SPI, RealVNC, 1-Wire, Remote GPIO, and disabling serial port..."
+# Step 10: Enable I2C, SPI, RealVNC, 1-Wire, and disable serial port (Progress: 5/10)
+update_gui 5 $TOTAL_STEPS "Enabling I2C, SPI, RealVNC, 1-Wire, disabling serial port..."
+echo "Enabling I2C, SPI, RealVNC, 1-Wire, disabling serial port..."
+
 sudo raspi-config nonint do_i2c 0
 sudo raspi-config nonint do_spi 0
 sudo raspi-config nonint do_vnc 0
 sudo raspi-config nonint do_onewire 0
-sudo raspi-config nonint do_rgpio 0
 sudo raspi-config nonint do_serial 1
 
-# Step 12: Install Mosquitto but do not start the service until after reboot
+# Step 11: Install Mosquitto (Progress: 6/10)
+update_gui 6 $TOTAL_STEPS "Installing Mosquitto..."
 echo "Installing Mosquitto..."
-export DEBIAN_FRONTEND=noninteractive
+
 sudo apt-get install -y mosquitto mosquitto-clients
-sudo touch /etc/mosquitto/passwd
 sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2
-echo "listener 1883
-allow_anonymous false
-password_file /etc/mosquitto/passwd
-per_listener_settings true" | sudo tee /etc/mosquitto/mosquitto.conf
 
-# Step 13: Node-RED installation using your custom script
-echo "Installing Node-RED..."
-bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh
-
-# Step 14: Install Sequent Boards (Moved before auto-start script)
-echo "Installing Sequent Boards..."
-BOARDS=(
-    "/home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi/update"
-    "/home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi/update"
-    "/home/Automata/AutomataBuildingManagment-HvacController/16univin-rpi/update"
-    "/home/Automata/AutomataBuildingManagment-HvacController/16relind-rpi/update"
-    "/home/Automata/AutomataBuildingManagment-HvacController/8relind-rpi/update"
-)
-
-for board in "${BOARDS[@]}"; do
-    if [ -d "$board" ]; then
-        echo "Updating board in $board"
-        (cd "$board" && ./update 0)
-    else
-        echo "Board directory $board not found."
-    fi
-done
-
-# Step 15: Run InstallNodeRedPallete.sh to install Node-RED nodes and themes
-echo "Running InstallNodeRedPallete.sh to install Node-RED nodes and themes..."
-bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh
-
-# Step 16: Add Chromium auto-start using InstallChromiumAutoStart.sh (no loop)
-echo "Running InstallChromiumAutoStart.sh to add Chromium auto-start..."
-bash /home/Automata/AutomataBuildingManagment-HvacController/InstallChromiumAutoStart.sh
-
-# Step 17: Increase swap size (Moved to just before reboot)
+# Step 12: Increase swap size (Progress: 7/10)
+update_gui 7 $TOTAL_STEPS "Increasing swap size..."
 echo "Increasing swap size..."
-run_script "increase_swap_size.sh"
+bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh
 
-# Step 18: Create one-time autostart entry for board updates
+# Step 13: Add board update to autostart (Progress: 8/10)
+update_gui 8 $TOTAL_STEPS "Adding board updates to autostart..."
+echo "Adding board updates to autostart..."
+
 AUTOSTART_FILE="/home/Automata/.config/lxsession/LXDE-pi/autostart"
-if [ ! -d "/home/Automata/.config/lxsession/LXDE-pi" ]; then
-    echo "Creating autostart directory..."
-    mkdir -p "/home/Automata/.config/lxsession/LXDE-pi"
-fi
+mkdir -p /home/Automata/.config/lxsession/LXDE-pi
 
-# Remove old entries and add the new one
-if grep -q 'update_sequent_boards.sh' "$AUTOSTART_FILE"; then
-    sed -i '/update_sequent_boards.sh/d' "$AUTOSTART_FILE"
-fi
-
-cat << 'EOF' > /home/Automata/update_sequent_boards.sh
+cat << 'EOF2' > /home/Automata/update_sequent_boards.sh
 #!/bin/bash
 BOARDS=(
     "/home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi/update"
     "/home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi/update"
-    "/home/Automata/AutomataBuildingManagment-HvacController/16univin-rpi/update"
-    "/home/Automata/AutomataBuildingManagment-HvacController/16relind-rpi/update"
-    "/home/Automata/AutomataBuildingManagment-HvacController/8relind-rpi/update"
 )
-
 for board in "${BOARDS[@]}"; do
     if [ -d "$board" ]; then
-        echo "Updating board in $board"
         (cd "$board" && ./update 0)
     else
         echo "Board directory $board not found."
     fi
 done
-EOF
+EOF2
 
 chmod +x /home/Automata/update_sequent_boards.sh
 echo "@/home/Automata/update_sequent_boards.sh" >> "$AUTOSTART_FILE"
 
-# Step 19: Create another Tkinter GUI for final message and reboot confirmation
-FINAL_MESSAGE_SCRIPT="/home/Automata/final_message_gui.py"
+# Step 14: Final step - Installation complete (Progress: 9/10)
+update_gui 9 $TOTAL_STEPS "Installation complete. Please reboot."
+echo "Installation complete. Please reboot."
 
-cat << 'EOF' > $FINAL_MESSAGE_SCRIPT
+# Step 15: Final Message for Reboot in a Tkinter GUI
+
+FINAL_MESSAGE_GUI="/home/Automata/final_message_gui.py"
+
+cat << 'EOF3' > $FINAL_MESSAGE_GUI
 import tkinter as tk
-from tkinter import messagebox
+
+def on_reboot():
+    import os
+    os.system('sudo reboot')
+
+def on_exit():
+    root.destroy()
 
 # Create the main window
 root = tk.Tk()
 root.title("Installation Complete")
 
 # Set window size and position
-root.geometry("500x300")
+root.geometry("600x400")
 root.configure(bg='#2e2e2e')  # Dark grey background
 
 # Final message
-label = tk.Label(root, text="Automata Building Management & Hvac Controller", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
+label = tk.Label(root, text="Automata Building Management & HVAC Controller", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
 label.pack(pady=20)
 
-instructions = tk.Label(root, text="A New Realm of Automation Awaits!\nPlease Reboot to Finalize Settings and Config Files.\n\nReboot Now?", font=("Helvetica", 12), fg="orange", bg="#2e2e2e")
-instructions.pack(pady=10)
-
-# User response handling
-def on_reboot():
-    root.destroy()
-    exit(0)
-
-def on_later():
-    messagebox.showinfo("Reboot Later", "You can reboot the system manually later.")
-    root.destroy()
-    exit(1)
+message = tk.Label(root, text="A New Realm of Automation Awaits!\nPlease reboot to finalize settings and config files.\n\nReboot Now?", font=("Helvetica", 14), fg="orange", bg="#2e2e2e")
+message.pack(pady=20)
 
 # Reboot and Later buttons
 button_frame = tk.Frame(root, bg='#2e2e2e')
@@ -245,21 +211,16 @@ button_frame.pack(pady=20)
 reboot_button = tk.Button(button_frame, text="Yes", font=("Helvetica", 12), command=on_reboot, bg='#00b3b3', fg="black", width=10)
 reboot_button.grid(row=0, column=0, padx=10)
 
-later_button = tk.Button(button_frame, text="No", font=("Helvetica", 12), command=on_later, bg='orange', fg="black", width=10)
-later_button.grid(row=0, column=1, padx=10)
+exit_button = tk.Button(button_frame, text="No", font=("Helvetica", 12), command=on_exit, bg='orange', fg="black", width=10)
+exit_button.grid(row=0, column=1, padx=10)
 
 # Start the Tkinter main loop
 root.mainloop()
-EOF
+EOF3
 
-# Run the final Tkinter GUI
-python3 $FINAL_MESSAGE_SCRIPT
+# Step 16: Start the final message GUI
+python3 $FINAL_MESSAGE_GUI
 
-# Step 20: Handle Reboot Based on User Input
-if [ $? = 0 ]; then
-    echo "Rebooting system..."
-    sudo reboot
-else
-    echo "Installation completed without reboot. Please reboot manually."
-fi
-
+# Step 17: Close the progress GUI after completion
+kill $GUI_PID
+echo "Installation complete. Exiting."
