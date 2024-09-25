@@ -12,14 +12,11 @@ LOGFILE="/home/Automata/install_log.txt"
 exec > >(tee -i "$LOGFILE") 2>&1
 echo "Installation started at: $(date)"
 
-# Step 3: Install necessary dependencies for Tkinter, Chromium, and Pillow
-echo "Installing dependencies for GUI and Chromium..."
-sudo apt-get update
-sudo apt-get install -y python3-tk python3-pil python3-pil.imagetk chromium-browser pcmanfm
-
-# Step 4: Create the Python GUI script for the installation progress (Start GUI earlier)
+# Step 3: Start the installation GUI before any installation steps
+echo "Starting installation GUI..."
 INSTALL_GUI="/home/Automata/install_progress_gui.py"
 
+# Create the Python GUI script for installation progress
 cat << 'EOF' > $INSTALL_GUI
 import tkinter as tk
 from tkinter import ttk
@@ -71,12 +68,12 @@ def run_installation_steps():
 
     # Step 3: Install Node-RED and its palettes
     run_shell_command("lxterminal -e 'bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh'", 3, total_steps, "Installing Node-RED interactively...")
-    
+
     # Step 4: Install Node-RED palettes
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh", 4, total_steps, "Installing Node-RED palettes...")
 
-    # Step 5: Set FullLogo.png as wallpaper and splash screen
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/change_logo_and_splash.sh", 5, total_steps, "Setting wallpaper and splash screen...")
+    # Step 5: Move splash.png and set it as wallpaper and splash screen
+    run_shell_command("mv /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/ && bash /home/Automata/AutomataBuildingManagment-HvacController/set_full_logo_image_rpi4.sh", 5, total_steps, "Moving splash.png and setting it as wallpaper and splash screen...")
 
     # Step 6: Enable I2C, SPI, RealVNC, 1-Wire, disable serial port
     run_shell_command("sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_serial 1", 6, total_steps, "Enabling I2C, SPI, RealVNC, disabling serial port...")
@@ -129,43 +126,5 @@ threading.Thread(target=run_installation_steps).start()
 root.mainloop()
 EOF
 
-# Step 5: Start the Tkinter GUI in the background
+# Step 4: Start the Tkinter GUI in the background
 python3 $INSTALL_GUI
-
-# Step 6: Ensure Chromium doesn't leave the desktop blank after closing
-cat << 'EOF' > /home/Automata/launch_chromium.sh
-#!/bin/bash
-
-# Wait for the network to be connected
-while ! ping -c 1 127.0.0.1 &>/dev/null; do
-    sleep 1
-done
-
-# Wait for an additional 10 seconds after network connection
-sleep 10
-
-# Ensure the desktop environment is running
-pcmanfm --desktop &
-
-# Launch Chromium in windowed mode (not full-screen or kiosk mode)
-chromium-browser --new-window http://127.0.0.1:1880/ http://127.0.0.1:1880/ui &
-
-# Keep the script running to prevent the session from closing
-wait
-EOF
-
-# Make the script executable
-chmod +x /home/Automata/launch_chromium.sh
-
-# Add the script to autostart for the current user
-AUTOSTART_FILE="/home/Automata/.config/lxsession/LXDE-pi/autostart"
-
-# Ensure the autostart directory exists
-mkdir -p $(dirname "$AUTOSTART_FILE")
-
-# Add the launch script to autostart
-if ! grep -q 'launch_chromium.sh' "$AUTOSTART_FILE"; then
-    echo "@/home/Automata/launch_chromium.sh" >> "$AUTOSTART_FILE"
-fi
-
-echo "Chromium launch script has been added to autostart."
