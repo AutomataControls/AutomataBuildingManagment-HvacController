@@ -13,7 +13,7 @@ import tkinter as tk
 from tkinter import ttk
 import subprocess
 import threading
-import os  # Import os module to avoid the 'os' not defined error
+import os
 
 # Create the main window
 root = tk.Tk()
@@ -54,7 +54,7 @@ def run_uninstallation_steps():
 
     # Step 1: Stop Node-RED and related services
     run_shell_command("sudo systemctl stop nodered.service && sudo systemctl disable nodered.service", 1, total_steps, "Stopping Node-RED service...")
-    run_shell_command("node-red-stop", 1, total_steps, "Ensuring Node-RED runtime is stopped...")
+    run_shell_command("sudo node-red-stop", 1, total_steps, "Ensuring Node-RED runtime is stopped...")
     
     run_shell_command("sudo systemctl stop mosquitto.service && sudo systemctl disable mosquitto.service", 1, total_steps, "Stopping Mosquitto service...")
     update_progress(1, total_steps, "Stopped Node-RED and Mosquitto services.")
