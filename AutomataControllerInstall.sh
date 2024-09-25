@@ -38,6 +38,14 @@ log "Setting permissions for necessary files..."
 find /home/Automata -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \;
 find /home/Automata -type f -name "*.png" -exec chmod +r {} \;
 
+# Include the repository directory for setting permissions
+REPO_DIR="/home/Automata/AutomataBuildingManagment-HvacController"
+if [ -d "$REPO_DIR" ]; then
+    log "Setting permissions for files in repository directory..."
+    find "$REPO_DIR" -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \;
+    find "$REPO_DIR" -type f -name "*.png" -exec chmod +r {} \;
+fi
+
 # Step 5: Stop lingering services
 for service in nodered mosquitto; do
     if systemctl is-active --quiet $service; then
