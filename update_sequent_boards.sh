@@ -1,10 +1,6 @@
 #!/bin/bash
 
-# Step 1: Install necessary dependencies for the GUI
-sudo apt-get update
-sudo apt-get install -y python3-tk python3-pil python3-pil.imagetk
-
-# Step 2: Create the Python GUI script with progress bar and status updates
+# Step 1: Create the Python GUI script with progress bar and status updates
 UPDATE_GUI="/home/Automata/update_progress_gui.py"
 
 cat << 'EOF' > $UPDATE_GUI
@@ -46,7 +42,7 @@ def run_shell_command(command, step, total_steps, message):
     subprocess.Popen(command, shell=True).wait()
 
 def run_update_steps():
-    total_steps = 7  # Total steps in the update process
+    total_steps = 6  # Total steps in the update process
     success = False  # Track if at least one board update succeeds
 
     # Step 1: Stop Node-RED services and Node-RED runtime
@@ -81,48 +77,14 @@ def run_update_steps():
             update_progress(step, total_steps, f"Board directory {board} not found.")
         step += 1
 
-    # Step 3: Create permanent Chromium auto-start
-    update_progress(step, total_steps, "Creating permanent Chromium auto-start script...")
-    with open("/home/Automata/launch_chromium_permanent.sh", "w") as f:
-        f.write('''
-#!/bin/bash
-# Wait for the network to be connected
-while ! ping -c 1 127.0.0.1 &>/dev/null; do
-    sleep 1
-done
-
-# Wait for an additional 10 seconds after network connection
-sleep 10
-
-# Launch Chromium in windowed mode
-chromium-browser --disable-features=KioskMode --new-window http://127.0.0.1:1880/ http://127.0.0.1:1880/ui
-''')
-    subprocess.run("chmod +x /home/Automata/launch_chromium_permanent.sh", shell=True)
-
-    autostart_file = "/home/Automata/.config/lxsession/LXDE-pi/autostart"
-    subprocess.run(f'mkdir -p $(dirname "{autostart_file}")', shell=True)
-    with open(autostart_file, "a") as f:
-        if 'launch_chromium_permanent.sh' not in f.read():
-            f.write("@/home/Automata/launch_chromium_permanent.sh\n")
-
-    step += 1
-    update_progress(step, total_steps, "Permanent Chromium auto-start script created.")
-
-    # Step 4: Remove the temporary auto-start entry if successful
-    if success:
-        update_progress(step, total_steps, "Removing temporary auto-start entry...")
-        subprocess.run("sed -i '/update_sequent_boards.sh/d' /home/Automata/.config/lxsession/LXDE-pi/autostart", shell=True)
-        step += 1
-        update_progress(step, total_steps, "Temporary auto-start entry removed.")
-
-    # Step 5: Show success message and reboot prompt
+    # Step 3: Show success message and reboot prompt
     if success:
         status_label.config(text="Updates completed successfully! Rebooting now...")
     else:
         status_label.config(text="No updates were applied. Rebooting now...")
 
     # Add a reboot prompt
-    root.after(5000, lambda: subprocess.run("sudo reboot", shell=True))
+    root.after(30000, lambda: subprocess.run("sudo reboot", shell=True))
 
 # Run updates in a separate thread to keep GUI responsive
 threading.Thread(target=run_update_steps).start()
@@ -131,5 +93,5 @@ threading.Thread(target=run_update_steps).start()
 root.mainloop()
 EOF
 
-# Step 3: Start the Tkinter GUI for the update process
+# Step 2: Start the Tkinter GUI for the update process
 python3 $UPDATE_GUI
