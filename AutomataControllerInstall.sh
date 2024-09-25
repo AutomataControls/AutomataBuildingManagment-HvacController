@@ -31,7 +31,7 @@ log "Installation started"
 # Step 3: Install only dependencies needed for GUI creation
 log "Installing minimal dependencies for GUI creation..."
 apt-get update
-apt-get install -y python3-tk python3-pil python3-pil.imagetk
+apt-get install -y python3-tk python3-pil python3-pil.imagetk gnome-terminal
 
 # Step 4: Create the installation progress GUI and run it
 log "Creating installation GUI script..."
@@ -58,42 +58,70 @@ def run_shell_command(command, step, total_steps, message):
 def run_installation_steps():
     total_steps = 12
     
-    # Killing any lingering services before installation
-    run_shell_command("sudo systemctl stop nodered mosquitto && sudo systemctl disable nodered mosquitto", 0, total_steps, "Stopping lingering services...")
+    # Overclock CPU
+    run_shell_command("sudo bash -c 'echo \"over_voltage=2\" >> /boot/config.txt && echo \"arm_freq=1750\" >> /boot/config.txt'", 1, total_steps, "Overclocking CPU...")
     sleep(2)
 
-    # Overclocking CPU slightly
-    run_shell_command("echo 'arm_freq=1750' | sudo tee -a /boot/config.txt", 1, total_steps, "Overclocking CPU... Turning up to 11 Meow...")
+    # Stop lingering services
+    run_shell_command("sudo systemctl stop mosquitto nodered", 2, total_steps, "Stopping lingering services...")
     sleep(2)
 
-    run_shell_command("sudo raspi-config nonint do_blanking 1", 2, total_steps, "Disabling screen blanking...")
+    run_shell_command("sudo raspi-config nonint do_blanking 1", 3, total_steps, "Disabling screen blanking...")
     sleep(2)
 
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_internet_time_rpi4.sh", 3, total_steps, "Setting system time...")
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_internet_time_rpi4.sh", 4, total_steps, "Setting system time...")
     sleep(2)
 
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh", 4, total_steps, "Installing Sequent Microsystems drivers...")
+    # Install Sequent Microsystems Drivers one by one
+    boards = [
+        "/home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi",
+        "/home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi",
+        "/home/Automata/AutomataBuildingManagment-HvacController/16univin-rpi",
+        "/home/Automata/AutomataBuildingManagment-HvacController/16relind-rpi",
+        "/home/Automata/AutomataBuildingManagment-HvacController/8relind-rpi"
+    ]
+    
+    step=5
+    total_steps=$((step + ${#boards[@]}))
+    
+    for board in "${boards[@]}"; do
+        if [ -d "$board" ]; then
+            update_progress "$step" "$total_steps" "Installing Sequent MS driver: $board"
+            sleep 2
+    
+            run_shell_command("cd $board && sudo make install", "$step", "$total_steps", "Installing driver for $board")
+    
+            if [ $? -eq 0 ]; then
+                update_progress "$step" "$total_steps" "Successfully installed driver for $board"
+            else:
+                update_progress "$step" "$total_steps" "Failed to install driver for $board"
+            fi
+        else
+            update_progress "$step" "$total_steps" "Board $board not found"
+        fi
+        step=$((step + 1))
+    done
+    
+    # Node-RED installation with interactive prompts in persistent terminal
+    run_shell_command("gnome-terminal -- bash -c 'bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh; exec bash'", 6, total_steps, "Installing Node-RED interactively...")
     sleep(2)
 
-    run_shell_command("lxterminal --hold --command='bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh'", 5, total_steps, "Installing Node-RED interactively...")
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh", 7, total_steps, "Installing Node-RED palettes...")
     sleep(2)
 
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh", 6, total_steps, "Installing Node-RED palettes...")
+    run_shell_command("sudo mv /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/splash.png", 8, total_steps, "Moving splash.png...")
     sleep(2)
 
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_full_logo_image_rpi4.sh", 7, total_steps, "Setting boot splash image...")
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_full_logo_image_rpi4.sh", 9, total_steps, "Setting splash image...")
     sleep(2)
 
-    run_shell_command("sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_serial 1", 8, total_steps, "Configuring interfaces...")
+    run_shell_command("sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_serial 1", 10, total_steps, "Configuring interfaces...")
     sleep(2)
 
-    run_shell_command("sudo apt-get install -y mosquitto mosquitto-clients", 9, total_steps, "Installing Mosquitto...")
-
+    run_shell_command("sudo apt-get install -y mosquitto mosquitto-clients", 11, total_steps, "Installing Mosquitto...")
+    
     # Ensure mosquitto password file is created
-    run_shell_command("sudo touch /etc/mosquitto/passwd && sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2", 10, total_steps, "Setting Mosquitto password file...")
-    sleep(2)
-
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh", 11, total_steps, "Increasing swap size...")
+    run_shell_command("sudo touch /etc/mosquitto/passwd && sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2", 12, total_steps, "Setting Mosquitto password file...")
     sleep(2)
 
     update_progress(12, total_steps, "Installation complete. Please reboot.")
@@ -152,7 +180,6 @@ chmod +x $INSTALL_GUI
 # Step 5: Run the GUI (only start it once)
 log "Running installation GUI..."
 sudo -u Automata DISPLAY=:0 python3 $INSTALL_GUI &
-sleep 2  # Adding a delay to prevent GUI from being started twice
 
 # Step 6: Set up Chromium Auto-launch
 log "Setting up Chromium auto-launch..."
@@ -217,19 +244,15 @@ EOF
 # Enable the board update service
 systemctl enable update-boards.service
 
-# Step 8: Permissions for /home/Automata and repository files after reboot
-log "Setting permissions for files in repository and /home/Automata after reboot..."
+# Step 8: Permissions for the repo files after reboot
+log "Setting permissions for files in repository after reboot..."
 REPO_DIR="/home/Automata/AutomataBuildingManagment-HvacController"
 if [ -d "$REPO_DIR" ]; then
     log "Setting permissions for files in repository directory..."
     find "$REPO_DIR" -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \;
     find "$REPO_DIR" -type f -name "*.png" -exec chmod +r {} \;
+    find "/home/Automata" -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \;
+    find "/home/Automata" -type f -name "*.png" -exec chmod +r {} \;
 fi
 
-# Setting permissions for /home/Automata
-log "Setting permissions for files in /home/Automata..."
-find /home/Automata -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \;
-find /home/Automata -type f -name "*.png" -exec chmod +r {} \;
-
 log "Installation completed. GUI should be running. You may reboot to finalize settings."
-
