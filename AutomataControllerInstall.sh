@@ -22,6 +22,7 @@ import tkinter as tk
 from tkinter import ttk
 import subprocess
 import threading
+from time import sleep  # Import sleep to avoid the error
 
 # Create the main window
 root = tk.Tk()
