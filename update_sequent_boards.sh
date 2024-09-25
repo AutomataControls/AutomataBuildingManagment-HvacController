@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # Step 1: Install necessary dependencies for the GUI
@@ -132,6 +133,5 @@ root.mainloop()
 EOF
 
 # Step 3: Start the Tkinter GUI for the update process
-python3 $UPDATE_GUI
-
-
+sleep 15  # Add a delay to avoid conflicts
+python3 $UPDATE_GUI &
