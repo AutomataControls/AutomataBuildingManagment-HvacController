@@ -73,7 +73,7 @@ def run_installation_steps():
 
     # Step 3: Clone Sequent Microsystems drivers
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh", step, total_steps, "Cloning Sequent Microsystems board repositories...")
-    sleep(2.2)
+    sleep(3)
     step += 1
 
     # Step 4: Install Sequent Microsystems drivers
@@ -87,10 +87,10 @@ def run_installation_steps():
         else:
             update_progress(step, total_steps, f"Board {board} not found, skipping...")
             step += 1
-        sleep(2.2)
+        sleep(3.2)
 
     # Step 5: Install Node-RED
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node-red.sh", step, total_steps, "Installing Node-RED...")
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", step, total_steps, "Installing Node-RED...")
     sleep(10)
     step += 1
 
@@ -105,7 +105,7 @@ def run_installation_steps():
     ]
     for palette in palettes:
         run_shell_command(f"cd ~/.node-red && npm install {palette}", step, total_steps, f"Installing {palette} palette...")
-        sleep(2.45)
+        sleep(4)
         step += 1
 
     # Step 7: Set ownership and permissions for launch_chromium.py
