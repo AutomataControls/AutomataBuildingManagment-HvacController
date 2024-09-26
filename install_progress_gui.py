@@ -93,7 +93,7 @@ def run_installation_steps():
         sleep(5)
 
     # Step 5: Install Node-RED
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node-red.sh", step, total_steps, "Installing Node-RED...")
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", step, total_steps, "Installing Node-RED...")
     sleep(5)
     step += 1
 
