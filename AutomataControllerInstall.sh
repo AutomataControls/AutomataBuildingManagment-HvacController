@@ -113,4 +113,4 @@ if [ -d "$REPO_DIR" ]; then
     find "/home/Automata" -path "/home/Automata/.cache" -prune -o -type f -name "*.png" -exec chmod +r {} \;
 fi
 
-log "Installation completed. You may reboot to update boards."
+log "AutomataControls Repo Clone Succes! Inintializing Install."
