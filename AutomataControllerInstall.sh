@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash 
 
 # Exit immediately if a command exits with a non-zero status
 set -e
@@ -58,49 +58,7 @@ for service in "${services[@]}"; do
     fi
 done
 
-# Step 7: Set up Chromium Auto-launch after reboot
-log "Setting up Chromium auto-launch..."
-AUTO_LAUNCH_SCRIPT="/home/Automata/launch_chromium.py"
-
-cat << 'EOF' > $AUTO_LAUNCH_SCRIPT
-import time
-import subprocess
-
-# Wait for the network to connect
-while True:
-    try:
-        subprocess.check_call(['ping', '-c', '1', '127.0.0.1'])
-        break
-    except subprocess.CalledProcessError:
-        time.sleep(1)
-
-# Wait additional time for services to load
-time.sleep(15)
-
-# Launch Chromium in windowed mode
-subprocess.Popen(['chromium-browser', '--new-window', 'http://127.0.0.1:1880/', 'http://127.0.0.1:1880/ui'])
-EOF
-
-# Create systemd service for Chromium auto-launch
-cat << 'EOF' > /etc/systemd/system/chromium-launch.service
-[Unit]
-Description=Auto-launch Chromium at boot
-After=network.target
-
-[Service]
-ExecStart=/usr/bin/python3 /home/Automata/launch_chromium.py
-User=Automata
-Environment=DISPLAY=:0
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# Enable the service
-systemctl enable chromium-launch.service
-
-# Step 8: Set permissions for repository and Automata files after reboot
+# Step 7: Set permissions for repository and Automata files after reboot
 log "Setting permissions for files in repository..."
 REPO_DIR="/home/Automata/AutomataBuildingManagment-HvacController"
 if [ -d "$REPO_DIR" ]; then
@@ -113,4 +71,5 @@ if [ -d "$REPO_DIR" ]; then
     find "/home/Automata" -path "/home/Automata/.cache" -prune -o -type f -name "*.png" -exec chmod +r {} \;
 fi
 
-log "AutomataControls Repo Clone Succes! Inintializing Install."
+log "AutomataControls Repo Clone Success! Initializing Install."
+
