@@ -86,7 +86,7 @@ def create_desktop_icon():
 
 # Run all installation steps in order
 def run_installation_steps():
-    total_steps = 31  # Adjusted total steps
+    total_steps = 32  # Adjusted total steps
     step = 1
 
     # Step 1: Copy splash.png from the repo directory to /home/Automata
@@ -101,23 +101,28 @@ def run_installation_steps():
     step += 1
     update_progress(step, total_steps, "Splash logo move successful!")
 
-    # Step 3: Overclock the Raspberry Pi
+    # Step 3: Set the clock to Eastern Standard Time (EST) via NTP
+    run_shell_command("sudo timedatectl set-timezone America/New_York && sudo timedatectl set-ntp true", step, total_steps, "Setting timezone to Eastern Standard Time (EST) and enabling NTP...")
+    sleep(2)
+    step += 1
+
+    # Step 4: Overclock the Raspberry Pi
     run_shell_command("echo -e 'over_voltage=2\narm_freq=1750' | sudo tee -a /boot/config.txt", step, total_steps, "Overclocking CPU...Turbo mode engaged!")
     sleep(5)
     step += 1
 
-    # Step 4: Create LXDE wallpaper config file with "Fill" mode
+    # Step 5: Create LXDE wallpaper config file with "Fill" mode
     run_shell_command("mkdir -p /home/Automata/.config/pcmanfm/LXDE-pi", step, total_steps, "Creating LXDE config directory...")
     run_shell_command("cat <<EOL > /home/Automata/.config/pcmanfm/LXDE-pi/desktop-items-0.conf\n[*]\nwallpaper=/home/Automata/splash.png\nwallpaper_mode=stretch\nEOL", step, total_steps, "Setting wallpaper to Fill mode in LXDE config...")
     sleep(2)
     step += 1
 
-    # Step 5: Increase swap size
+    # Step 6: Increase swap size
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh", step, total_steps, "Increasing swap size...")
     sleep(5)
     step += 1
 
-    # Step 6: Clone Sequent Microsystems drivers
+    # Step 7: Clone Sequent Microsystems drivers
     boards_to_clone = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi", "8relind-rpi"]
     for board in boards_to_clone:
         run_shell_command(f"git clone https://github.com/sequentmicrosystems/{board}.git /home/Automata/AutomataBuildingManagment-HvacController/{board}", step, total_steps, f"Cloning {board}...")
@@ -125,7 +130,7 @@ def run_installation_steps():
         sleep(3.5)
         step += 1
 
-    # Step 7: Install Sequent Microsystems drivers
+    # Step 8: Install Sequent Microsystems drivers
     boards = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi", "8relind-rpi"]
     for board in boards:
         board_path = f"/home/Automata/AutomataBuildingManagment-HvacController/{board}"
@@ -138,13 +143,13 @@ def run_installation_steps():
             step += 1
         sleep(5)
 
-    # Step 8: Install Node-RED theme package and fix the missing theme issue
+    # Step 9: Install Node-RED theme package and fix the missing theme issue
     run_shell_command("mkdir -p /home/Automata/.node-red/node_modules/@node-red-contrib-themes/theme-collection/themes", step, total_steps, "Creating theme collection directory...")
     run_shell_command("cd /home/Automata/.node-red && npm install @node-red-contrib-themes/theme-collection", step, total_steps, "Installing Node-RED theme package...")
     sleep(5)
     step += 1
 
-    # Step 9: Install Node-RED
+    # Step 10: Install Node-RED
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", step, total_steps, "Installing Node-RED...")
     update_progress(step, total_steps, "Node-RED Security Measures initiated...")
     sleep(5)
@@ -155,7 +160,7 @@ def run_installation_steps():
     update_progress(step, total_steps, "Node-RED User and Password Security & VPN setup Successful!\n Welcome Automata.")
     step += 1
 
-    # Step 10: Create a desktop icon for updating Sequent boards using splash.png as the icon
+    # Step 11: Create a desktop icon for updating Sequent boards using splash.png as the icon
     update_progress(step, total_steps, "Creating desktop icon for Sequent board updates...")
     create_desktop_icon()
     step += 1
@@ -197,4 +202,5 @@ threading.Thread(target=spin_animation, daemon=True).start()
 
 # Tkinter main loop to keep the GUI running
 root.mainloop()
+
 
