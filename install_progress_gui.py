@@ -58,12 +58,12 @@ def run_shell_command(command, step, total_steps, message):
 
 # Run all installation steps in order
 def run_installation_steps():
-    total_steps = 27  # Total steps updated
+    total_steps = 27
     step = 1
 
     # Step 1: Overclock the Raspberry Pi
     run_shell_command("echo -e 'over_voltage=2\narm_freq=1750' | sudo tee -a /boot/config.txt", step, total_steps, "Overclocking CPU...Turbo mode engaged!")
-    sleep(4)
+    sleep(5)
     step += 1
 
     # Step 2: Increase swap size
@@ -72,9 +72,12 @@ def run_installation_steps():
     step += 1
 
     # Step 3: Clone Sequent Microsystems drivers
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh", step, total_steps, "Cloning Sequent Microsystems board repositories...")
-    sleep(3)
-    step += 1
+    boards_to_clone = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi", "8relind-rpi"]
+    for board in boards_to_clone:
+        run_shell_command(f"git clone https://github.com/sequentmicrosystems/{board}.git /home/Automata/AutomataBuildingManagment-HvacController/{board}", step, total_steps, f"Cloning {board}...")
+        update_progress(step, total_steps, f"{board} cloned successfully!")
+        sleep(3.5)
+        step += 1
 
     # Step 4: Install Sequent Microsystems drivers
     boards = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi", "8relind-rpi"]
@@ -87,11 +90,11 @@ def run_installation_steps():
         else:
             update_progress(step, total_steps, f"Board {board} not found, skipping...")
             step += 1
-        sleep(3.2)
+        sleep(5)
 
     # Step 5: Install Node-RED
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", step, total_steps, "Installing Node-RED...")
-    sleep(10)
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node-red.sh", step, total_steps, "Installing Node-RED...")
+    sleep(5)
     step += 1
 
     # Step 6: Install Node-RED palettes
@@ -150,3 +153,4 @@ threading.Thread(target=spin_animation, daemon=True).start()
 
 # Tkinter main loop to keep the GUI running
 root.mainloop()
+
