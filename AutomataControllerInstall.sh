@@ -59,42 +59,48 @@ sudo -u Automata DISPLAY=:0 python3 /home/Automata/AutomataBuildingManagment-Hva
 log "Installing Sequent Microsystems drivers and Node-RED..."
 
 # Install Sequent MS Drivers (Modify for each board)
-boards=("megabas-rpi" "megaind-rpi")
+boards=("megabas-rpi" "megaind-rpi" "16univin-rpi" "16relind-rpi" "8relind-rpi")
 total_steps=12
 step=1
 for board in "${boards[@]}"; do
-    log "Installing Sequent MS driver for $board..."
-    run_shell_command "cd /home/Automata/AutomataBuildingManagment-HvacController/$board && sudo make install" "$step" "$total_steps" "Installing $board driver..."
+    if [ -d "/home/Automata/AutomataBuildingManagment-HvacController/$board" ]; then
+        log "Installing Sequent MS driver for $board..."
+        run_shell_command "cd /home/Automata/AutomataBuildingManagment-HvacController/$board && sudo make install" "$step" "$total_steps" "Installing $board driver..."
+    else
+        log "Board directory $board not found, skipping."
+    fi
     sleep 2
     step=$((step + 1))
 done
 
 # Install Node-RED interactively (without closing the terminal)
-run_shell_command "gnome-terminal -- bash -c 'bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh; exec bash'" "$step" "$total_steps" "Installing Node-RED interactively..."
+log "Launching Node-RED installation..."
+gnome-terminal -- bash -c 'bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh; exec bash'
 sleep 2
 
 # Install Node-RED palettes
+log "Installing Node-RED palettes..."
 run_shell_command "bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh" "$step" "$total_steps" "Installing Node-RED palettes..."
 sleep 2
 
-# Move splash screen
-run_shell_command "sudo mv /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/splash.png" "$step" "$total_steps" "Moving splash.png..."
-sleep 2
-
-# Set boot splash screen
-run_shell_command "bash /home/Automata/AutomataBuildingManagment-HvacController/set_full_logo_image_rpi4.sh" "$step" "$total_steps" "Setting splash screen..."
+# Skip wallpaper step but set boot splash screen only
+log "Setting splash screen at boot..."
+run_shell_command "bash /home/Automata/AutomataBuildingManagment-HvacController/set_boot_splash_screen.sh" "$step" "$total_steps" "Setting splash screen..."
 sleep 2
 
 # Configure interfaces (i2c, spi, vnc, etc.)
+log "Configuring interfaces (i2c, spi, etc.)..."
 run_shell_command "sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_serial 1" "$step" "$total_steps" "Configuring interfaces..."
 sleep 2
 
 # Install Mosquitto and set password
+log "Installing Mosquitto..."
 run_shell_command "sudo apt-get install -y mosquitto mosquitto-clients" "$step" "$total_steps" "Installing Mosquitto..."
 run_shell_command "sudo touch /etc/mosquitto/passwd && sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2" "$step" "$total_steps" "Setting Mosquitto password file..."
 sleep 2
 
 # Increase swap size
+log "Increasing swap size..."
 run_shell_command "bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh" "$step" "$total_steps" "Increasing swap size..."
 sleep 2
 
