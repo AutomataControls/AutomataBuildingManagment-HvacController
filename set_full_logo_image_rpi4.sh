@@ -9,14 +9,19 @@ if [ ! -f "$IMAGE_PATH" ]; then
     exit 1
 fi
 
-# Install necessary package if missing
-if ! command -v pcmanfm &> /dev/null; then
-    echo "pcmanfm not found, installing..."
-    sudo apt-get install -y pcmanfm
-fi
+# Try finding the correct wallpaper config path
+WALLPAPER_CONFIG=$(find /home/Automata/.config -name "desktop-items-0.conf" | head -n 1)
 
-# Set splash.png as desktop wallpaper (for Raspberry Pi OS with LXDE)
-sudo -u Automata DISPLAY=:0 pcmanfm --set-wallpaper="$IMAGE_PATH"
+if [ -f "$WALLPAPER_CONFIG" ]; then
+    echo "Setting wallpaper..."
+    # Modify wallpaper settings in the LXDE config file
+    sed -i "s|wallpaper=.*|wallpaper=$IMAGE_PATH|g" "$WALLPAPER_CONFIG"
+    sed -i "s|wallpaper_mode=.*|wallpaper_mode=fit|g" "$WALLPAPER_CONFIG"
+    # Restart pcmanfm to apply changes
+    pcmanfm --reconfigure
+else
+    echo "Warning: desktop-items-0.conf not found. Could not set wallpaper."
+fi
 
 # Set splash.png as the splash screen
 SPLASH_SCREEN_PATH="/usr/share/plymouth/themes/pix/splash.png"
