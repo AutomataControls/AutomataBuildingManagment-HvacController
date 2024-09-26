@@ -17,6 +17,22 @@ handle_error() {
 # Set up error handling
 trap 'handle_error $LINENO' ERR
 
+# Function to run shell commands and log their execution
+run_shell_command() {
+    local command="$1"
+    local step="$2"
+    local total_steps="$3"
+    local message="$4"
+
+    log "[$step/$total_steps] $message"
+    eval "$command"
+
+    if [ $? -ne 0 ]; then
+        log "Error occurred while running: $command"
+        exit 1
+    fi
+}
+
 # Step 1: Ensure the script is running as root
 if [ "$EUID" -ne 0 ]; then
     echo "Please run as root. Re-running with sudo..."
@@ -79,7 +95,7 @@ for board in "${boards[@]}"; do
 done
 
 # Install Node-RED interactively (without closing the terminal)
-run_shell_command "gnome-terminal -- bash -c 'bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh; exec bash'" "$step" "$total_steps" "Installing Node-RED interactively..."
+run_shell_command "bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh" "$step" "$total_steps" "Installing Node-RED interactively..."
 sleep 2
 
 # Install Node-RED palettes
