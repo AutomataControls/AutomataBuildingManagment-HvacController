@@ -56,7 +56,7 @@ def run_installation_steps():
 
     # Step 2: Clone Sequent Microsystems drivers
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh", step, total_steps, "Cloning Sequent Microsystems board repositories...")
-    sleep(20)
+    sleep(15)
     step += 1
 
     # Step 3: Install Sequent Microsystems drivers
@@ -64,10 +64,9 @@ def run_installation_steps():
     for board in boards:
         board_path = f"/home/Automata/AutomataBuildingManagment-HvacController/{board}"
         if os.path.isdir(board_path):
+            update_progress(step, total_steps, f"Cloning {board}... Success!")
             run_shell_command(f"cd {board_path} && sudo make install", step, total_steps, f"Installing {board} driver...")
-            update_progress(step, total_steps, f"Cloned {board} - Success!")
-            sleep(20)
-            update_progress(step, total_steps, f"Make install {board} - Success!")
+            update_progress(step, total_steps, f"Make install {board}... Success!")
             step += 1
         else:
             update_progress(step, total_steps, f"Board {board} not found, skipping...")
@@ -75,8 +74,8 @@ def run_installation_steps():
         sleep(15)
 
     # Step 4: Install Node-RED
-    run_shell_command("bash <(curl -sL https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered)", step, total_steps, "Installing Node-RED...")
-    sleep(120)
+    run_shell_command("curl -sL https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered | bash", step, total_steps, "Installing Node-RED...")
+    sleep(15)
     step += 1
 
     # Step 5: Install Node-RED palettes (list each palette)
@@ -101,8 +100,8 @@ def run_installation_steps():
     ]
     for palette in palettes:
         run_shell_command(f"cd ~/.node-red && npm install {palette}", step, total_steps, f"Installing {palette} palette...")
-        sleep(15)
         step += 1
+        sleep(15)
 
     # Step 6: Move splash screen
     run_shell_command("sudo mv /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/splash.png", step, total_steps, "Moving splash.png...")
@@ -110,7 +109,7 @@ def run_installation_steps():
     step += 1
 
     # Step 7: Set boot splash screen
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_boot_splash_screen.sh", step, total_steps, "Setting boot splash screen...")
+    run_shell_command("sudo python3 /home/Automata/AutomataBuildingManagment-HvacController/set_boot_splash_screen.py", step, total_steps, "Setting boot splash screen...")
     sleep(15)
     step += 1
 
@@ -164,3 +163,4 @@ threading.Thread(target=run_installation_steps).start()
 
 # Tkinter main loop to keep the GUI running
 root.mainloop()
+
