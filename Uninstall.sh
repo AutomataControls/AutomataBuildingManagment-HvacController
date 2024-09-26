@@ -28,8 +28,8 @@ fi
 LOGFILE="/home/Automata/uninstall_log.txt"
 log "Uninstallation started"
 
-# Step 3: Stop and disable services (Mosquitto, Node-RED, Chromium)
-log "Stopping and disabling services (Mosquitto, Node-RED, Chromium-launch)..."
+# Step 3: Stop and disable related services (Mosquitto, Node-RED, Chromium-launch)
+log "Stopping and disabling related services (Mosquitto, Node-RED, Chromium-launch)..."
 services=('mosquitto' 'nodered' 'chromium-launch')
 for service in "${services[@]}"; do
     if systemctl is-active --quiet "$service"; then
@@ -86,15 +86,21 @@ if [ -f "/home/Automata/install_progress_gui.py" ]; then
     rm /home/Automata/install_progress_gui.py
     log "Installation progress GUI script removed"
 fi
-if [ -f "/home/Automata/update_progress_gui.py" ]; then
-    rm /home/Automata/update_progress_gui.py
-    log "Update progress GUI script removed"
+
+# Step 11: Prepare and execute the Uninstall Progress GUI
+log "Preparing and executing the Uninstall Progress GUI..."
+
+# Make uninstall_progress_gui.py executable
+if [ -f "/home/Automata/uninstall_progress_gui.py" ]; then
+    chmod +x /home/Automata/uninstall_progress_gui.py
+    log "Uninstall Progress GUI script is now executable"
+    
+    # Execute the Uninstall Progress GUI script
+    log "Launching the Uninstall Progress GUI..."
+    python3 /home/Automata/uninstall_progress_gui.py &
+else
+    log "Uninstall Progress GUI script not found!"
+    echo "Error: /home/Automata/uninstall_progress_gui.py not found. Uninstallation will proceed without GUI."
 fi
 
-# Step 11: Uninstall Node-RED and related services
-log "Uninstalling Node-RED..."
-npm uninstall -g --unsafe-perm node-red
-log "Node-RED uninstalled"
-
-# Step 12: Final step - log uninstallation completion
-log "Uninstallation completed successfully!"
+log "Uninstallation process completed."
