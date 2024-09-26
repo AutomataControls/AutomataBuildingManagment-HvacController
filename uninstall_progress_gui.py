@@ -124,7 +124,7 @@ def show_uninstall_complete_message():
     final_label = tk.Label(final_window, text="Automata BMS Uninstallation Complete", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
     final_label.pack(pady=20)
 
-    final_message = tk.Label(final_window, text="Uninstallation Successful.\nWould you like to reboot the system now?", font=("Helvetica", 14), fg="orange", bg="#2e2e2e")
+    final_message = tk.Label(final_window, text="Uninstallation Successful,Pleae Reboot for changes to take effect.\nWould you like to reboot the system now?", font=("Helvetica", 14), fg="orange", bg="#2e2e2e")
     final_message.pack(pady=20)
 
     # Reboot and Exit buttons
