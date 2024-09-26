@@ -107,9 +107,10 @@ if [ -d "$REPO_DIR" ]; then
     log "Setting permissions for files in repository directory..."
     find "$REPO_DIR" -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \;
     find "$REPO_DIR" -type f -name "*.png" -exec chmod +r {} \;
-    find "/home/Automata" -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \;
-    find "/home/Automata" -type f -name "*.png" -exec chmod +r {} \;
+    
+    # Exclude .cache directory to avoid permission issues
+    find "/home/Automata" -path "/home/Automata/.cache" -prune -o -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \;
+    find "/home/Automata" -path "/home/Automata/.cache" -prune -o -type f -name "*.png" -exec chmod +r {} \;
 fi
 
 log "Installation completed. You may reboot to update boards."
-
