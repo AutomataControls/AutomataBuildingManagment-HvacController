@@ -71,5 +71,23 @@ if [ -d "$REPO_DIR" ]; then
     find "/home/Automata" -path "/home/Automata/.cache" -prune -o -type f -name "*.png" -exec chmod +r {} \;
 fi
 
+# Step 8: Enable single-click execution in PCManFM (file manager)
+log "Enabling single-click execution for desktop icons..."
+PCMANFM_CONFIG_DIR="/home/Automata/.config/pcmanfm/LXDE-pi"
+mkdir -p "$PCMANFM_CONFIG_DIR"
+
+cat <<EOL > "$PCMANFM_CONFIG_DIR/pcmanfm.conf"
+[ui]
+show_hidden=1
+single_click=1
+EOL
+
+# Ensure proper permissions for the config file
+chmod +r "$PCMANFM_CONFIG_DIR/pcmanfm.conf"
+chown Automata:Automata "$PCMANFM_CONFIG_DIR/pcmanfm.conf"
+
+log "Single-click execution enabled for desktop icons."
+
 log "AutomataControls Repo Clone Success! Initializing Install."
+
 
