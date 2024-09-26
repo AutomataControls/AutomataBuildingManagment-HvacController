@@ -1,4 +1,4 @@
-import tkinter as tk 
+import tkinter as tk
 from tkinter import ttk
 import subprocess
 import threading
@@ -55,6 +55,33 @@ def run_shell_command(command, step, total_steps, message):
         root.update_idletasks()
     else:
         print(f"Command output: {result.stdout}")
+
+# Function to create a desktop icon for updating boards
+def create_desktop_icon():
+    desktop_file = "/home/Automata/Desktop/update_sequent_boards.desktop"
+    icon_script = "/home/Automata/AutomataBuildingManagment-HvacController/update_sequent_boards.sh"
+    icon_content = f"""
+    [Desktop Entry]
+    Name=Update Sequent Boards
+    Comment=Run the Sequent Board Update Script
+    Exec=bash {icon_script}
+    Icon=utilities-terminal
+    Terminal=true
+    Type=Application
+    Categories=Utility;
+    """
+
+    # Write the .desktop file
+    with open(desktop_file, "w") as f:
+        f.write(icon_content)
+    
+    # Set executable permissions for the .desktop file
+    subprocess.run(f"chmod +x {desktop_file}", shell=True)
+    
+    # Set ownership to Automata user
+    subprocess.run(f"chown Automata:Automata {desktop_file}", shell=True)
+    
+    print("Desktop icon for updating Sequent boards created successfully!")
 
 # Run all installation steps in order
 def run_installation_steps():
@@ -128,6 +155,11 @@ def run_installation_steps():
     sleep(2.5)
     step += 1
 
+    # Step 9: Create desktop icon for updating Sequent boards
+    update_progress(step, total_steps, "Creating desktop icon for Sequent board updates...")
+    create_desktop_icon()
+    step += 1
+
     # Final Step: Installation complete
     update_progress(total_steps, total_steps, "Installation complete. Please reboot.")
     show_reboot_prompt()
@@ -165,4 +197,3 @@ threading.Thread(target=spin_animation, daemon=True).start()
 
 # Tkinter main loop to keep the GUI running
 root.mainloop()
-
