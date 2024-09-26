@@ -76,7 +76,9 @@ def run_installation_steps():
             step += 1
 
     # Step 4: Install Node-RED with a 120-second wait after starting the process
-    run_shell_command("bash <(curl -sL https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered)", step, total_steps, "Installing Node-RED...")
+    run_shell_command("curl -sL https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered > /tmp/install-node-red.sh", step, total_steps, "Downloading Node-RED install script...")
+    sleep(5)
+    run_shell_command("bash /tmp/install-node-red.sh", step, total_steps, "Installing Node-RED...")
     sleep(120)  # Increased sleep time to 120 seconds to ensure Node-RED completes properly
     step += 1
 
