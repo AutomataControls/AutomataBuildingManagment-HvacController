@@ -58,7 +58,7 @@ def run_shell_command(command, step, total_steps, message):
 
 # Run all installation steps in order
 def run_installation_steps():
-    total_steps = 27
+    total_steps = 28  # Adjusted total steps
     step = 1
 
     # Step 1: Overclock the Raspberry Pi
@@ -111,7 +111,12 @@ def run_installation_steps():
         sleep(4)
         step += 1
 
-    # Step 7: Set ownership and permissions for launch_chromium.py
+    # Step 7: Configure interfaces (i2c, spi, vnc, etc.)
+    run_shell_command("sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_rgpio 0 && sudo raspi-config nonint disable_blank 0", step, total_steps, "Configuring interfaces (I2C, SPI, VNC, etc.)...")
+    sleep(5)
+    step += 1
+
+    # Step 8: Set ownership and permissions for launch_chromium.py
     run_shell_command("sudo chown Automata:Automata /home/Automata/launch_chromium.py && sudo chmod +x /home/Automata/launch_chromium.py", step, total_steps, "Setting ownership and permissions for launch_chromium.py...")
     sleep(2.5)
     step += 1
@@ -153,4 +158,5 @@ threading.Thread(target=spin_animation, daemon=True).start()
 
 # Tkinter main loop to keep the GUI running
 root.mainloop()
+
 
