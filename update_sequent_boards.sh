@@ -8,7 +8,7 @@ from tkinter import ttk
 import subprocess
 import threading
 import os
-from time import sleep  # Added the missing import
+from time import sleep
 
 def update_progress(step, total_steps, message):
     progress['value'] = (step / total_steps) * 100
@@ -40,24 +40,27 @@ def get_cpuid(board_path):
         return f"Error retrieving CPU ID: {str(e)}"
 
 def run_update_steps():
-    total_steps = 13  # Adjusted total steps
+    total_steps = 14  # Adjusted total steps to include new steps
     success = False
 
-    # Step 1: Stopping Node-RED services
-    update_progress(1, total_steps, "Stopping Node-RED services...")
-    result = subprocess.run("systemctl is-active --quiet nodered.service", shell=True)
-    if result.returncode == 0:
-        run_shell_command("sudo systemctl stop nodered.service && sudo systemctl disable nodered.service", 1, total_steps, "Stopping Node-RED system service")
-    else:
-        print("Node-RED service is not active.")
-
-    # Step 2: Set permissions for launch_chromium.py
-    update_progress(2, total_steps, "Setting ownership and permissions for launch_chromium.py...")
-    run_shell_command("sudo chown Automata:Automata /home/Automata/launch_chromium.py && sudo chmod +x /home/Automata/launch_chromium.py", 2, total_steps, "Setting ownership and permissions for launch_chromium.py")
+    # Step 1: Kill all related services (Mosquitto, Node-RED, launch_chromium)
+    update_progress(1, total_steps, "Stopping related services...")
+    run_shell_command("sudo systemctl stop mosquitto.service nodered.service chromium-launch.service", 1, total_steps, "Stopping Mosquitto, Node-RED, and Chromium services")
     sleep(2)
-    step = 3
 
-    # Step 3-7: Board update process
+    # Step 2: Disable Node-RED and launch_chromium services
+    update_progress(2, total_steps, "Disabling Node-RED and Chromium services...")
+    run_shell_command("sudo systemctl disable nodered.service chromium-launch.service", 2, total_steps, "Disabling Node-RED and Chromium services")
+    sleep(2)
+
+    # Step 3: Set permissions for launch_chromium.py
+    update_progress(3, total_steps, "Setting ownership and permissions for launch_chromium.py...")
+    run_shell_command("sudo chown Automata:Automata /home/Automata/launch_chromium.py && sudo chmod +x /home/Automata/launch_chromium.py", 3, total_steps, "Setting ownership and permissions for launch_chromium.py")
+    sleep(2)
+
+    step = 4  # Continue from here after permissions set
+
+    # Step 4-7: Board update process
     boards = [
         "megabas-rpi",
         "megaind-rpi",
@@ -89,29 +92,25 @@ def run_update_steps():
             print(f"Board update script {board_update_script} not found.")
             step += 1
 
-    # Step 8: Re-enabling Node-RED service
-    update_progress(step, total_steps, "Re-enabling and starting Node-RED service...")
-    run_shell_command("sudo systemctl enable nodered.service && sudo systemctl start nodered.service", step, total_steps, "Re-enabling and starting Node-RED service")
+    # Step 8: Re-enable services
+    update_progress(step, total_steps, "Re-enabling Node-RED and Chromium services...")
+    run_shell_command("sudo systemctl enable nodered.service chromium-launch.service", step, total_steps, "Re-enabling Node-RED and Chromium services")
     sleep(2)
     step += 1
 
-    # Step 9: Re-enabling Mosquitto service
-    update_progress(step, total_steps, "Re-enabling and starting Mosquitto service...")
-    run_shell_command("sudo systemctl enable mosquitto.service && sudo systemctl start mosquitto.service", step, total_steps, "Re-enabling and starting Mosquitto service")
+    # Step 9: Restart all services and reload daemons
+    update_progress(step, total_steps, "Restarting Mosquitto, Node-RED, Chromium services, and reloading daemons...")
+    run_shell_command("sudo systemctl start mosquitto.service nodered.service chromium-launch.service && sudo systemctl daemon-reload", step, total_steps, "Restarting all services and reloading daemons")
     sleep(2)
     step += 1
 
-    # Step 10: Enabling and restarting Chromium launch service if successful
+    # Step 10: Final step - prompt for reboot
     if success:
-        update_progress(step, total_steps, "Board update succeeded. Enabling and restarting Chromium launch...")
-        run_shell_command("sudo systemctl enable chromium-launch.service && sudo systemctl restart chromium-launch.service", total_steps, total_steps, "Enabling and restarting Chromium launch service")
+        update_progress(step, total_steps, "Board update succeeded. Please reboot.")
     else:
         update_progress(total_steps, total_steps, "Board update failed.")
         print("No boards were updated successfully.")
 
-    # Step 11: Finish GUI and prompt for reboot
-    status_label.config(text="Final Reboot to save board firmware...")
-    root.update_idletasks()
     show_reboot_prompt()
 
 def show_reboot_prompt():
