@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash 
 
 # Exit immediately if a command exits with a non-zero status
 set -e
@@ -90,7 +90,22 @@ fi
 # Step 11: Prepare and execute the Uninstall Progress GUI
 log "Preparing and executing the Uninstall Progress GUI..."
 
-# Make uninstall_progress_gui.py executable
+# Check if uninstall_progress_gui.py exists in the repository directory
+REPO_DIR="/home/Automata/AutomataBuildingManagment-HvacController"
+UNINSTALL_GUI_SCRIPT="$REPO_DIR/uninstall_progress_gui.py"
+
+if [ -f "$UNINSTALL_GUI_SCRIPT" ]; then
+    # Copy it to /home/Automata if not already there
+    if [ ! -f "/home/Automata/uninstall_progress_gui.py" ]; then
+        cp "$UNINSTALL_GUI_SCRIPT" /home/Automata/
+        log "Uninstall Progress GUI script copied to /home/Automata"
+    fi
+else
+    log "Uninstall Progress GUI script not found in repository directory."
+    echo "Error: $UNINSTALL_GUI_SCRIPT not found. Uninstallation will proceed without GUI."
+fi
+
+# Make uninstall_progress_gui.py executable and run it
 if [ -f "/home/Automata/uninstall_progress_gui.py" ]; then
     chmod +x /home/Automata/uninstall_progress_gui.py
     log "Uninstall Progress GUI script is now executable"
@@ -99,8 +114,9 @@ if [ -f "/home/Automata/uninstall_progress_gui.py" ]; then
     log "Launching the Uninstall Progress GUI..."
     python3 /home/Automata/uninstall_progress_gui.py &
 else
-    log "Uninstall Progress GUI script not found!"
+    log "Uninstall Progress GUI script not found in /home/Automata."
     echo "Error: /home/Automata/uninstall_progress_gui.py not found. Uninstallation will proceed without GUI."
 fi
 
 log "Uninstallation process completed."
+
