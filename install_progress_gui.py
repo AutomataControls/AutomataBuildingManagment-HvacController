@@ -3,12 +3,12 @@ from tkinter import ttk
 import subprocess
 import threading
 import os
-from time import sleep
+import time
 
 # Create the main window
 root = tk.Tk()
 root.title("Automata Installation Progress")
-root.geometry("600x400")
+root.geometry("600x450")
 root.configure(bg='#1e1e1e')  # Slightly darker background
 
 # Title message
@@ -62,10 +62,12 @@ spinner_label.pack(pady=10)
 
 # Function to update the spinner
 def spinning_wheel():
-    for char in "|/-\\":
-        spinner_label.config(text=char)
-        root.update_idletasks()
-        sleep(0.1)
+    while not installation_complete:
+        for char in "|/-\\":
+            spinner_label.config(text=char)
+            time.sleep(0.1)
+            if installation_complete:
+                break
 
 # Function to update progress
 def update_progress(step, total_steps, message):
@@ -96,10 +98,13 @@ def run_shell_command(command, step, total_steps, message):
             text=f"Exception during: {message}. Check logs for details."
         )
         print(f"Exception: {e}")
-    spinning_wheel()  # Activate the spinning wheel during each command
+
+# Global flag to indicate installation completion
+installation_complete = False
 
 # Run all installation steps in order
 def run_installation_steps():
+    global installation_complete
     total_steps = 18  # Updated total steps
     step = 1
 
@@ -110,7 +115,7 @@ def run_installation_steps():
         total_steps,
         "Overclocking CPU...Turning up to 11 Meow!"
     )
-    sleep(7)
+    time.sleep(15)
     step += 1
 
     # Step 2: Clone Sequent Microsystems drivers
@@ -120,7 +125,7 @@ def run_installation_steps():
         total_steps,
         "Cloning Sequent Microsystems board repositories..."
     )
-    sleep(9)
+    time.sleep(15)
     step += 1
 
     # Step 3: Install Sequent Microsystems drivers
@@ -153,19 +158,29 @@ def run_installation_steps():
                 f"Board {board} not found, skipping..."
             )
             step += 1
-        sleep(9)
+        time.sleep(15)
 
-    # Step 4: Install Node-RED
+    # Step 4: Download Node-RED installation script
     run_shell_command(
-        "bash -c 'curl -sL https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered | bash'",
+        "curl -sL https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered -o /tmp/update-nodejs-and-nodered",
+        step,
+        total_steps,
+        "Downloading Node-RED installer..."
+    )
+    time.sleep(15)
+    step += 1
+
+    # Step 5: Install Node-RED
+    run_shell_command(
+        "bash /tmp/update-nodejs-and-nodered",
         step,
         total_steps,
         "Installing Node-RED..."
     )
-    sleep(120)
+    time.sleep(15)
     step += 1
 
-    # Step 5: Install Node-RED palettes
+    # Step 6: Install Node-RED palettes
     palettes = [
         "node-red-contrib-ui-led",
         "node-red-dashboard",
@@ -192,30 +207,30 @@ def run_installation_steps():
             total_steps,
             f"Installing {palette} palette..."
         )
-        sleep(25)
+        time.sleep(15)
         step += 1
 
-    # Step 6: Move splash screen
+    # Step 7: Move splash screen
     run_shell_command(
         "sudo mv /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/splash.png",
         step,
         total_steps,
         "Moving splash.png..."
     )
-    sleep(7)
+    time.sleep(15)
     step += 1
 
-    # Step 7: Set boot splash screen
+    # Step 8: Set boot splash screen
     run_shell_command(
         "sudo python3 /home/Automata/AutomataBuildingManagment-HvacController/set_boot_splash_screen.py",
         step,
         total_steps,
         "Setting boot splash screen..."
     )
-    sleep(8)
+    time.sleep(15)
     step += 1
 
-    # Step 8: Configure interfaces (i2c, spi, vnc, etc.)
+    # Step 9: Configure interfaces (i2c, spi, vnc, etc.)
     run_shell_command(
         "sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 "
         "&& sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 "
@@ -224,20 +239,20 @@ def run_installation_steps():
         total_steps,
         "Configuring interfaces..."
     )
-    sleep(7)
+    time.sleep(15)
     step += 1
 
-    # Step 9: Install Mosquitto
+    # Step 10: Install Mosquitto
     run_shell_command(
         "sudo apt-get install -y mosquitto mosquitto-clients",
         step,
         total_steps,
         "Installing Mosquitto..."
     )
-    sleep(15)
+    time.sleep(15)
     step += 1
 
-    # Step 10: Set up Mosquitto security
+    # Step 11: Set up Mosquitto security
     # Create password file with user 'Automata' and password 'Inverted2'
     run_shell_command(
         "echo 'Inverted2\nInverted2' | sudo mosquitto_passwd -c /etc/mosquitto/passwd Automata",
@@ -245,7 +260,7 @@ def run_installation_steps():
         total_steps,
         "Setting Mosquitto password..."
     )
-    sleep(7)
+    time.sleep(5)
 
     # Update mosquitto.conf file
     mosquitto_config = (
@@ -273,20 +288,21 @@ def run_installation_steps():
         total_steps,
         "Restarting Mosquitto with security settings..."
     )
-    sleep(15)
+    time.sleep(15)
     step += 1
 
-    # Step 11: Increase swap size
+    # Step 12: Increase swap size
     run_shell_command(
         "bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh",
         step,
         total_steps,
         "Increasing swap size..."
     )
-    sleep(15)
+    time.sleep(15)
     step += 1
 
-    # Final step: Installation complete
+    # Installation complete
+    installation_complete = True
     update_progress(total_steps, total_steps, "Installation complete. Please reboot.")
     show_reboot_prompt()
 
@@ -343,10 +359,14 @@ def show_reboot_prompt():
 
     final_window.mainloop()
 
+# Start the spinner in a separate thread
+spinner_thread = threading.Thread(target=spinning_wheel)
+spinner_thread.start()
+
 # Start the installation steps in a separate thread to keep the GUI responsive
-threading.Thread(target=run_installation_steps).start()
+installation_thread = threading.Thread(target=run_installation_steps)
+installation_thread.start()
 
 # Tkinter main loop to keep the GUI running
 root.mainloop()
-
 
