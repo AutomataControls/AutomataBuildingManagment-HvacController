@@ -43,6 +43,7 @@ apt-get install -y python3-tk python3-pil python3-pil.imagetk gnome-terminal
 log "Copying installation progress GUI script and setting permissions..."
 cp /home/Automata/AutomataBuildingManagment-HvacController/install_progress_gui.py /home/Automata/install_progress_gui.py
 chmod +x /home/Automata/install_progress_gui.py
+chown Automata:Automata /home/Automata/install_progress_gui.py
 
 # Step 5: Run the installation progress GUI
 log "Running installation GUI..."
@@ -63,12 +64,20 @@ log "Setting permissions for files in repository..."
 REPO_DIR="/home/Automata/AutomataBuildingManagment-HvacController"
 if [ -d "$REPO_DIR" ]; then
     log "Setting permissions for files in repository directory..."
-    find "$REPO_DIR" -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \;
-    find "$REPO_DIR" -type f -name "*.png" -exec chmod +r {} \;
     
-    # Exclude .cache directory to avoid permission issues
-    find "/home/Automata" -path "/home/Automata/.cache" -prune -o -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \;
-    find "/home/Automata" -path "/home/Automata/.cache" -prune -o -type f -name "*.png" -exec chmod +r {} \;
+    # Ensure executable permissions for .sh, .py files
+    find "$REPO_DIR" -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \; 2>> "$LOGFILE"
+    
+    # Ensure read permissions for .png files
+    find "$REPO_DIR" -type f -name "*.png" -exec chmod +r {} \; 2>> "$LOGFILE"
+    
+    # Set ownership to Automata for the entire directory
+    chown -R Automata:Automata "$REPO_DIR"
+    
+    # Exclude .cache directory and set permissions for home directory files
+    find "/home/Automata" -path "/home/Automata/.cache" -prune -o -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \; 2>> "$LOGFILE"
+    find "/home/Automata" -path "/home/Automata/.cache" -prune -o -type f -name "*.png" -exec chmod +r {} \; 2>> "$LOGFILE"
+    chown -R Automata:Automata /home/Automata
 fi
 
 # Step 8: Enable single-click execution in PCManFM (file manager)
@@ -89,5 +98,4 @@ chown Automata:Automata "$PCMANFM_CONFIG_DIR/pcmanfm.conf"
 log "Single-click execution enabled for desktop icons."
 
 log "AutomataControls Repo Clone Success! Initializing Install."
-
 
