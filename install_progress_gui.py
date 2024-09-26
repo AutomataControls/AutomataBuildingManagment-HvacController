@@ -15,7 +15,7 @@ root.configure(bg='#2e2e2e')
 label = tk.Label(root, text="Automata Installation Progress", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
 label.pack(pady=20)
 
-# Footer message (Developed by A. Jewell Sr. in Copperplate or similar)
+# Footer message (Developed by A. Jewell Sr.)
 footer_label = tk.Label(root, text="Developed by A. Jewell Sr, 2023", font=("Helvetica", 10), fg="#00b3b3", bg="#2e2e2e")
 footer_label.pack(side="bottom", pady=5)
 
@@ -107,23 +107,18 @@ def run_installation_steps():
     sleep(7)
     step += 1
 
-    # Step 7: Set boot splash screen
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_boot_splash_screen.sh", step, total_steps, "Setting boot splash screen...")
-    sleep(7)
-    step += 1
-
-    # Step 8: Configure interfaces (i2c, spi, vnc, etc.)
+    # Step 7: Configure interfaces (i2c, spi, vnc, etc.)
     run_shell_command("sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_serial 1", step, total_steps, "Configuring interfaces...")
     sleep(7)
     step += 1
 
-    # Step 9: Install Mosquitto
+    # Step 8: Install Mosquitto
     run_shell_command("sudo apt-get install -y mosquitto mosquitto-clients", step, total_steps, "Installing Mosquitto...")
     run_shell_command("sudo mosquitto_passwd -c /etc/mosquitto/passwd Automata && sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2", step, total_steps, "Setting Mosquitto password file...")
     sleep(7)
     step += 1
 
-    # Step 10: Increase swap size
+    # Step 9: Increase swap size
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh", step, total_steps, "Increasing swap size...")
     sleep(7)
     step += 1
