@@ -1,18 +1,23 @@
 #!/bin/bash
 
-# Function to install npm packages and skip if there's an error
-install_npm_package() {
-    PACKAGE=$1
-    echo "Installing $PACKAGE..."
-    npm install -g "$PACKAGE" || { 
-        echo "Failed to install $PACKAGE. Skipping."; 
-        return 1; 
-    }
-    return 0
+# Function to install a Node-RED palette and check if the installation was successful
+install_palette() {
+    local palette_name="$1"
+    echo "Installing $palette_name..."
+    
+    cd ~/.node-red || exit
+    npm install "$palette_name"
+    
+    if [ $? -eq 0 ]; then
+        echo "$palette_name installed successfully!"
+    else
+        echo "Failed to install $palette_name. Please check for errors."
+        exit 1
+    fi
 }
 
-# Install all the required Node-RED nodes
-NODE_PACKAGES=(
+# List of palette nodes to install
+palettes=(
     "node-red-contrib-ui-led"
     "node-red-dashboard"
     "node-red-contrib-sm-16inpind"
@@ -32,23 +37,8 @@ NODE_PACKAGES=(
     "node-red-contrib-themes/theme-collection"
 )
 
-# Loop through each package and attempt to install it
-for package in "${NODE_PACKAGES[@]}"; do
-    install_npm_package "$package"
+# Loop through each palette and install it
+for palette in "${palettes[@]}"; do
+    install_palette "$palette"
 done
 
-# Install Node-RED themes
-THEME_PACKAGES=(
-    "@node-red-contrib-themes/dark"
-    "@node-red-contrib-themes/oled"
-)
-
-for theme in "${THEME_PACKAGES[@]}"; do
-    install_npm_package "$theme"
-done
-
-# Restart Node-RED
-echo "Restarting Node-RED..."
-sudo systemctl restart nodered
-
-echo "Node-RED nodes and themes installed successfully."
