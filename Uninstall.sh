@@ -92,3 +92,4 @@ find /home/Automata -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod -x {}
 find /home/Automata -type f -name "*.png" -exec chmod -r {} \;
 
 log "Uninstallation completed."
+
