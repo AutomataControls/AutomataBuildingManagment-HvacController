@@ -15,7 +15,7 @@ root.configure(bg='#2e2e2e')
 label = tk.Label(root, text="Automata Installation Progress", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
 label.pack(pady=20)
 
-# Footer message (Developed by A. Jewell Sr. in a Copperplate-style font)
+# Footer message (Developed by A. Jewell Sr. in Copperplate or similar)
 footer_label = tk.Label(root, text="Developed by A. Jewell Sr, 2023", font=("Helvetica", 10), fg="#00b3b3", bg="#2e2e2e")
 footer_label.pack(side="bottom", pady=5)
 
@@ -33,10 +33,10 @@ def update_progress(step, total_steps, message):
     status_label.config(text=message)
     root.update_idletasks()
 
-# Function to run shell commands with sudo
+# Function to run shell commands (sudo only where needed)
 def run_shell_command(command, step, total_steps, message):
     update_progress(step, total_steps, message)
-    result = subprocess.run(f"sudo {command}", shell=True, text=True, capture_output=True)
+    result = subprocess.run(command, shell=True, text=True, capture_output=True)
     if result.returncode != 0:
         status_label.config(text=f"Error during: {message}. Check logs for details.")
         print(f"Error output: {result.stderr}")
@@ -44,9 +44,9 @@ def run_shell_command(command, step, total_steps, message):
     else:
         print(f"Command output: {result.stdout}")
 
-# Function to handle installation steps
+# Run all installation steps in order
 def run_installation_steps():
-    total_steps = 18
+    total_steps = 15
     step = 1
 
     # Step 1: Slightly overclock the Raspberry Pi
@@ -64,22 +64,17 @@ def run_installation_steps():
     for board in boards:
         board_path = f"/home/Automata/AutomataBuildingManagment-HvacController/{board}"
         if os.path.isdir(board_path):
-            run_shell_command(f"cd {board_path} && sudo make install", step, total_steps, f"Installing {board} driver...")
-            update_progress(step, total_steps, f"Installing {board} driver...")
-            sleep(7)
-            run_shell_command(f"echo '{board} make install success!'", step, total_steps, f"{board} make install success!")
-            sleep(7)
+            run_shell_command(f"sudo bash -c 'cd {board_path} && make install'", step, total_steps, f"Installing {board} driver...")
+            update_progress(step, total_steps, f"{board} make install success!")
             step += 1
         else:
             update_progress(step, total_steps, f"Board {board} not found, skipping...")
-            sleep(7)
             step += 1
+        sleep(7)
 
-    # Step 4: Install Node-RED with a 120-second wait after starting the process
-    run_shell_command("curl -sL https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered > /tmp/install-node-red.sh", step, total_steps, "Downloading Node-RED install script...")
-    sleep(5)
-    run_shell_command("bash /tmp/install-node-red.sh", step, total_steps, "Installing Node-RED...")
-    sleep(120)  # Increased sleep time to 120 seconds to ensure Node-RED completes properly
+    # Step 4: Install Node-RED
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", step, total_steps, "Installing Node-RED...")
+    sleep(120)  # Long sleep for Node-RED installation
     step += 1
 
     # Step 5: Install Node-RED palettes (list each palette)
@@ -113,7 +108,7 @@ def run_installation_steps():
     step += 1
 
     # Step 7: Set boot splash screen
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_boot_splash_screen.py", step, total_steps, "Setting boot splash screen...")
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_boot_splash_screen.sh", step, total_steps, "Setting boot splash screen...")
     sleep(7)
     step += 1
 
@@ -124,8 +119,7 @@ def run_installation_steps():
 
     # Step 9: Install Mosquitto
     run_shell_command("sudo apt-get install -y mosquitto mosquitto-clients", step, total_steps, "Installing Mosquitto...")
-    sleep(7)
-    run_shell_command("sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2", step, total_steps, "Setting Mosquitto password file...")
+    run_shell_command("sudo mosquitto_passwd -c /etc/mosquitto/passwd Automata && sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2", step, total_steps, "Setting Mosquitto password file...")
     sleep(7)
     step += 1
 
