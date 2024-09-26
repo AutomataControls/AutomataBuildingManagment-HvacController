@@ -63,44 +63,38 @@ boards=("megabas-rpi" "megaind-rpi" "16univin-rpi" "16relind-rpi" "8relind-rpi")
 total_steps=12
 step=1
 for board in "${boards[@]}"; do
-    if [ -d "/home/Automata/AutomataBuildingManagment-HvacController/$board" ]; then
-        log "Installing Sequent MS driver for $board..."
-        run_shell_command "cd /home/Automata/AutomataBuildingManagment-HvacController/$board && sudo make install" "$step" "$total_steps" "Installing $board driver..."
-    else
-        log "Board directory $board not found, skipping."
-    fi
+    log "Installing Sequent MS driver for $board..."
+    run_shell_command "cd /home/Automata/AutomataBuildingManagment-HvacController/$board && sudo make install" "$step" "$total_steps" "Installing $board driver..."
     sleep 2
     step=$((step + 1))
 done
 
 # Install Node-RED interactively (without closing the terminal)
-log "Launching Node-RED installation..."
-gnome-terminal -- bash -c 'bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh; exec bash'
+run_shell_command "gnome-terminal -- bash -c 'bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh; exec bash'" "$step" "$total_steps" "Installing Node-RED interactively..."
 sleep 2
 
 # Install Node-RED palettes
-log "Installing Node-RED palettes..."
 run_shell_command "bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh" "$step" "$total_steps" "Installing Node-RED palettes..."
 sleep 2
 
-# Skip wallpaper step but set boot splash screen only
-log "Setting splash screen at boot..."
-run_shell_command "bash /home/Automata/AutomataBuildingManagment-HvacController/set_boot_splash_screen.sh" "$step" "$total_steps" "Setting splash screen..."
+# Move splash screen
+run_shell_command "sudo mv /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/splash.png" "$step" "$total_steps" "Moving splash.png..."
+sleep 2
+
+# Set boot splash screen
+run_shell_command "bash /home/Automata/AutomataBuildingManagment-HvacController/set_full_logo_image_rpi4.sh" "$step" "$total_steps" "Setting splash screen..."
 sleep 2
 
 # Configure interfaces (i2c, spi, vnc, etc.)
-log "Configuring interfaces (i2c, spi, etc.)..."
 run_shell_command "sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_serial 1" "$step" "$total_steps" "Configuring interfaces..."
 sleep 2
 
 # Install Mosquitto and set password
-log "Installing Mosquitto..."
 run_shell_command "sudo apt-get install -y mosquitto mosquitto-clients" "$step" "$total_steps" "Installing Mosquitto..."
 run_shell_command "sudo touch /etc/mosquitto/passwd && sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2" "$step" "$total_steps" "Setting Mosquitto password file..."
 sleep 2
 
 # Increase swap size
-log "Increasing swap size..."
 run_shell_command "bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh" "$step" "$total_steps" "Increasing swap size..."
 sleep 2
 
@@ -108,34 +102,17 @@ sleep 2
 update_progress "$total_steps" "$total_steps" "Installation complete. Please reboot."
 show_reboot_prompt
 
-# Step 8: Set up Chromium Auto-launch
+# Step 8: Copy the Chromium launch script from the repo
+log "Copying Chromium launch script..."
+cp /home/Automata/AutomataBuildingManagment-HvacController/launch_chromium.py /home/Automata/launch_chromium.py
+chmod +x /home/Automata/launch_chromium.py
+
+# Step 9: Set up Chromium auto-launch systemd service
 log "Setting up Chromium auto-launch..."
-AUTO_LAUNCH_SCRIPT="/home/Automata/launch_chromium.py"
-
-cat << 'EOF' > $AUTO_LAUNCH_SCRIPT
-import time
-import subprocess
-
-# Wait for the network to connect
-while True:
-    try:
-        subprocess.check_call(['ping', '-c', '1', '127.0.0.1'])
-        break
-    except subprocess.CalledProcessError:
-        time.sleep(1)
-
-# Wait additional time for services to load
-time.sleep(15)
-
-# Launch Chromium in windowed mode
-subprocess.Popen(['chromium-browser', '--disable-features=KioskMode', '--new-window', 'http://127.0.0.1:1880/', 'http://127.0.0.1:1880/ui'])
-EOF
-
-# Create systemd service for Chromium auto-launch
 cat << 'EOF' > /etc/systemd/system/chromium-launch.service
 [Unit]
 Description=Auto-launch Chromium at boot
-After=network.target
+After=network.target update-boards.service
 
 [Service]
 ExecStart=/usr/bin/python3 /home/Automata/launch_chromium.py
@@ -147,12 +124,11 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 
-# Enable the service
+# Enable the Chromium launch service
 systemctl enable chromium-launch.service
 
-# Step 9: Set up systemd service to trigger update_progress_gui.py on reboot
+# Step 10: Set up the update_progress_gui service for running after reboot
 log "Setting up board update service for the next reboot..."
-
 cat << 'EOF' > /etc/systemd/system/update-boards.service
 [Unit]
 Description=Run Update Progress GUI on Reboot
@@ -171,7 +147,7 @@ EOF
 # Enable the board update service to run once on the next reboot
 systemctl enable update-boards.service
 
-# Step 10: Permissions for the repo files after reboot
+# Step 11: Set permissions for files in repository after reboot
 log "Setting permissions for files in repository after reboot..."
 REPO_DIR="/home/Automata/AutomataBuildingManagment-HvacController"
 if [ -d "$REPO_DIR" ]; then
