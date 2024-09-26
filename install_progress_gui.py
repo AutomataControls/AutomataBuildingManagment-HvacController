@@ -95,6 +95,9 @@ def run_installation_steps():
     # Step 5: Install Node-RED
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", step, total_steps, "Installing Node-RED...")
     sleep(5)
+    update_progress(step, total_steps, "Setting up Node-RED security...")
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/configure_node_red_security.sh", step, total_steps, "Applying Node-RED security configuration...")
+    update_progress(step, total_steps, "Node-RED Security setup completed.")
     step += 1
 
     # Step 6: Install Node-RED palettes
@@ -110,6 +113,7 @@ def run_installation_steps():
         run_shell_command(f"cd ~/.node-red && npm install {palette}", step, total_steps, f"Installing {palette} palette...")
         sleep(4)
         step += 1
+    update_progress(step, total_steps, "Node-RED installation and Security setup complete and patches applied.")
 
     # Step 7: Configure interfaces (i2c, spi, vnc, etc.)
     run_shell_command("sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_rgpio 0 && sudo raspi-config nonint disable_blank 0", step, total_steps, "Configuring interfaces (I2C, SPI, VNC, etc.)...")
@@ -158,5 +162,3 @@ threading.Thread(target=spin_animation, daemon=True).start()
 
 # Tkinter main loop to keep the GUI running
 root.mainloop()
-
-
