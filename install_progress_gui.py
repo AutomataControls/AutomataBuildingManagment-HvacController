@@ -36,7 +36,7 @@ def update_progress(step, total_steps, message):
 # Function to run shell commands
 def run_shell_command(command, step, total_steps, message):
     update_progress(step, total_steps, message)
-    result = subprocess.run(command, shell=True, text=True, capture_output=True)
+    result = subprocess.run(command, shell=True, text=True, capture_output=True, timeout=600)  # Added timeout
     if result.returncode != 0:
         status_label.config(text=f"Error during: {message}. Check logs for details.")
         print(f"Error output: {result.stderr}")
@@ -51,12 +51,12 @@ def run_installation_steps():
 
     # Step 1: Overclock the Raspberry Pi
     run_shell_command("echo -e 'over_voltage=2\narm_freq=1750' | sudo tee -a /boot/config.txt", step, total_steps, "Overclocking CPU...Turning up to 11 Meow!")
-    sleep(7)
+    sleep(4)
     step += 1
 
     # Step 2: Clone Sequent Microsystems drivers
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh", step, total_steps, "Cloning Sequent Microsystems board repositories...")
-    sleep(7)
+    sleep(2)
     step += 1
 
     # Step 3: Install Sequent Microsystems drivers
@@ -65,16 +65,16 @@ def run_installation_steps():
         board_path = f"/home/Automata/AutomataBuildingManagment-HvacController/{board}"
         if os.path.isdir(board_path):
             run_shell_command(f"cd {board_path} && sudo make install", step, total_steps, f"Installing {board} driver...")
-            sleep(7)
+            sleep(2)
             step += 1
         else:
             update_progress(step, total_steps, f"Board {board} not found, skipping...")
-            sleep(7)
+            sleep(2)
             step += 1
 
     # Step 4: Install Node-RED
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", step, total_steps, "Installing Node-RED...")
-    sleep(120)
+    sleep(10)  # Increased the sleep time for Node-RED
     step += 1
 
     # Step 5: Install Node-RED palettes (list each palette)
@@ -99,7 +99,7 @@ def run_installation_steps():
     ]
     for palette in palettes:
         run_shell_command(f"cd ~/.node-red && npm install {palette}", step, total_steps, f"Installing {palette} palette...")
-        sleep(7)
+        sleep(5)
         step += 1
 
     # Final step: Installation complete
