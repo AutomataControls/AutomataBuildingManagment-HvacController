@@ -119,7 +119,13 @@ def run_installation_steps():
             step += 1
         sleep(5)
 
-    # Step 5: Install Node-RED
+    # Step 5: Install the Node-RED theme package and fix the missing theme issue
+    run_shell_command("mkdir -p /home/Automata/.node-red/node_modules/@node-red-contrib-themes/theme-collection/themes", step, total_steps, "Creating theme collection directory...")
+    run_shell_command("cd /home/Automata/.node-red && npm install @node-red-contrib-themes/theme-collection", step, total_steps, "Installing Node-RED theme package...")
+    sleep(5)
+    step += 1
+
+    # Step 6: Install Node-RED
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", step, total_steps, "Installing Node-RED...")
     update_progress(step, total_steps, "Node-RED installation process initiated...")
     sleep(5)
@@ -130,7 +136,7 @@ def run_installation_steps():
     update_progress(step, total_steps, "Node-RED security setup completed.")
     step += 1
 
-    # Step 6: Install Node-RED palettes
+    # Step 7: Install Node-RED palettes
     palettes = [
         "node-red-contrib-ui-led", "node-red-dashboard", "node-red-contrib-sm-16inpind",
         "node-red-contrib-sm-16relind", "node-red-contrib-sm-8inputs", "node-red-contrib-sm-8relind",
@@ -145,17 +151,17 @@ def run_installation_steps():
         step += 1
     update_progress(step, total_steps, "Node-RED installation and security setup completed and patches applied.")
 
-    # Step 7: Configure interfaces (i2c, spi, vnc, etc.)
+    # Step 8: Configure interfaces (i2c, spi, vnc, etc.)
     run_shell_command("sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_rgpio 0 && sudo raspi-config nonint do_blanking 1", step, total_steps, "Configuring interfaces (I2C, SPI, VNC, etc.)...")
     sleep(5)
     step += 1
 
-    # Step 8: Set ownership and permissions for launch_chromium.py
+    # Step 9: Set ownership and permissions for launch_chromium.py
     run_shell_command("sudo chown Automata:Automata /home/Automata/launch_chromium.py && sudo chmod +x /home/Automata/launch_chromium.py", step, total_steps, "Setting ownership and permissions for launch_chromium.py...")
     sleep(2.5)
     step += 1
 
-    # Step 9: Create desktop icon for updating Sequent boards
+    # Step 10: Create desktop icon for updating Sequent boards
     update_progress(step, total_steps, "Creating desktop icon for Sequent board updates...")
     create_desktop_icon()
     step += 1
@@ -197,3 +203,4 @@ threading.Thread(target=spin_animation, daemon=True).start()
 
 # Tkinter main loop to keep the GUI running
 root.mainloop()
+
