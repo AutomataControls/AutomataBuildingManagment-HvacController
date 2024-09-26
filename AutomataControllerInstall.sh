@@ -63,9 +63,13 @@ boards=("megabas-rpi" "megaind-rpi" "16univin-rpi" "16relind-rpi" "8relind-rpi")
 total_steps=12
 step=1
 for board in "${boards[@]}"; do
-    log "Installing Sequent MS driver for $board..."
-    run_shell_command "cd /home/Automata/AutomataBuildingManagment-HvacController/$board && sudo make install" "$step" "$total_steps" "Installing $board driver..."
-    sleep 2
+    if [ -d "/home/Automata/AutomataBuildingManagment-HvacController/$board" ]; then
+        log "Installing Sequent MS driver for $board..."
+        run_shell_command "cd /home/Automata/AutomataBuildingManagment-HvacController/$board && sudo make install" "$step" "$total_steps" "Installing $board driver..."
+        sleep 2
+    else
+        log "Board $board not found, skipping..."
+    fi
     step=$((step + 1))
 done
 
@@ -102,8 +106,8 @@ sleep 2
 update_progress "$total_steps" "$total_steps" "Installation complete. Please reboot."
 show_reboot_prompt
 
-# Step 8: Copy the Chromium launch script from the repo
-log "Copying Chromium launch script..."
+# Step 8: Copy the Chromium launch script from the repo and set permissions
+log "Copying Chromium launch script and setting permissions..."
 cp /home/Automata/AutomataBuildingManagment-HvacController/launch_chromium.py /home/Automata/launch_chromium.py
 chmod +x /home/Automata/launch_chromium.py
 
@@ -127,8 +131,9 @@ EOF
 # Enable the Chromium launch service
 systemctl enable chromium-launch.service
 
-# Step 10: Set up the update_progress_gui service for running after reboot
+# Step 10: Set up systemd service to trigger update_progress_gui.py on reboot
 log "Setting up board update service for the next reboot..."
+
 cat << 'EOF' > /etc/systemd/system/update-boards.service
 [Unit]
 Description=Run Update Progress GUI on Reboot
@@ -147,7 +152,7 @@ EOF
 # Enable the board update service to run once on the next reboot
 systemctl enable update-boards.service
 
-# Step 11: Set permissions for files in repository after reboot
+# Step 11: Permissions for the repo files after reboot
 log "Setting permissions for files in repository after reboot..."
 REPO_DIR="/home/Automata/AutomataBuildingManagment-HvacController"
 if [ -d "$REPO_DIR" ]; then
@@ -159,3 +164,4 @@ if [ -d "$REPO_DIR" ]; then
 fi
 
 log "Installation completed. You may reboot to update boards."
+
