@@ -1,3 +1,4 @@
+
 import tkinter as tk
 from tkinter import ttk
 import subprocess
@@ -58,12 +59,12 @@ def run_shell_command(command, step, total_steps, message):
 
 # Run all installation steps in order
 def run_installation_steps():
-    total_steps = 15
+    total_steps = 25  # Increased total steps to account for each palette
     step = 1
 
     # Step 1: Overclock the Raspberry Pi
     run_shell_command("echo -e 'over_voltage=2\narm_freq=1750' | sudo tee -a /boot/config.txt", step, total_steps, "Overclocking CPU...Turning up to 11 Meow!")
-    sleep(2)
+    sleep(4)
     step += 1
 
     # Step 2: Clone Sequent Microsystems drivers
