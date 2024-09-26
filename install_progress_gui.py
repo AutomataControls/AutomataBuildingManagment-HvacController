@@ -27,6 +27,18 @@ progress.pack(pady=20)
 status_label = tk.Label(root, text="Starting installation...", font=("Helvetica", 12), fg="orange", bg="#2e2e2e")
 status_label.pack(pady=10)
 
+# Spinning line animation below the progress bar
+spin_label = tk.Label(root, text="", font=("Helvetica", 12), fg="#00b3b3", bg="#2e2e2e")
+spin_label.pack(pady=10)
+
+# Function to update the spinning line animation
+def spin_animation():
+    while True:
+        for frame in ["|", "/", "-", "\\"]:
+            spin_label.config(text=frame)
+            sleep(0.1)
+            root.update_idletasks()
+
 # Function to update progress
 def update_progress(step, total_steps, message):
     progress['value'] = (step / total_steps) * 100
@@ -51,7 +63,7 @@ def run_installation_steps():
 
     # Step 1: Overclock the Raspberry Pi
     run_shell_command("echo -e 'over_voltage=2\narm_freq=1750' | sudo tee -a /boot/config.txt", step, total_steps, "Overclocking CPU...Turning up to 11 Meow!")
-    sleep(4)
+    sleep(2)
     step += 1
 
     # Step 2: Clone Sequent Microsystems drivers
@@ -99,7 +111,7 @@ def run_installation_steps():
     ]
     for palette in palettes:
         run_shell_command(f"cd ~/.node-red && npm install {palette}", step, total_steps, f"Installing {palette} palette...")
-        sleep(5)
+        sleep(3)
         step += 1
 
     # Final step: Installation complete
@@ -130,6 +142,9 @@ def show_reboot_prompt():
     exit_button.grid(row=0, column=1, padx=10)
 
     final_window.mainloop()
+
+# Start the spinning animation in a separate thread
+threading.Thread(target=spin_animation, daemon=True).start()
 
 # Start the installation steps in a separate thread to keep the GUI responsive
 threading.Thread(target=run_installation_steps).start()
