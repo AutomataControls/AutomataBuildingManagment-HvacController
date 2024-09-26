@@ -1,4 +1,3 @@
-
 import tkinter as tk
 from tkinter import ttk
 import subprocess
@@ -62,30 +61,35 @@ def run_installation_steps():
     total_steps = 31  # Adjusted total steps
     step = 1
 
-    # Step 1: Backup original wallpaper and copy Automata logo
+    # Step 1: Copy splash.png from repository to /home/Automata
+    run_shell_command("cp /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/", step, total_steps, "Copying splash.png to /home/Automata...")
+    sleep(3)
+    step += 1
+
+    # Step 2: Backup original wallpaper and copy Automata logo
     run_shell_command("cd /usr/share/plymouth/themes/pix/ && sudo mv splash.png splash.png.bk", step, total_steps, "Backing up original wallpaper...")
     run_shell_command("sudo cp /home/Automata/splash.png /usr/share/plymouth/themes/pix/", step, total_steps, "Copying Automata logo...")
     sleep(3)
     step += 1
     update_progress(step, total_steps, "Move Successful!")
 
-    # Step 2: Overclock the Raspberry Pi
+    # Step 3: Overclock the Raspberry Pi
     run_shell_command("echo -e 'over_voltage=2\narm_freq=1750' | sudo tee -a /boot/config.txt", step, total_steps, "Overclocking CPU...Turbo mode engaged!")
     sleep(5)
     step += 1
 
-    # Step 3: Create LXDE wallpaper config file with "Fill" mode
+    # Step 4: Create LXDE wallpaper config file with "Fill" mode
     run_shell_command("mkdir -p /home/Automata/.config/pcmanfm/LXDE-pi", step, total_steps, "Creating LXDE config directory...")
     run_shell_command("cat <<EOL > /home/Automata/.config/pcmanfm/LXDE-pi/desktop-items-0.conf\n[*]\nwallpaper=/home/Automata/splash.png\nwallpaper_mode=stretch\nEOL", step, total_steps, "Setting wallpaper to Fill mode in LXDE config...")
     sleep(2)
     step += 1
 
-    # Step 4: Increase swap size
+    # Step 5: Increase swap size
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh", step, total_steps, "Increasing swap size...")
     sleep(5)
     step += 1
 
-    # Step 5: Clone Sequent Microsystems drivers
+    # Step 6: Clone Sequent Microsystems drivers
     boards_to_clone = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi", "8relind-rpi"]
     for board in boards_to_clone:
         run_shell_command(f"git clone https://github.com/sequentmicrosystems/{board}.git /home/Automata/AutomataBuildingManagment-HvacController/{board}", step, total_steps, f"Cloning {board}...")
@@ -93,7 +97,7 @@ def run_installation_steps():
         sleep(3.5)
         step += 1
 
-    # Step 6: Install Sequent Microsystems drivers
+    # Step 7: Install Sequent Microsystems drivers
     boards = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi", "8relind-rpi"]
     for board in boards:
         board_path = f"/home/Automata/AutomataBuildingManagment-HvacController/{board}"
@@ -106,13 +110,13 @@ def run_installation_steps():
             step += 1
         sleep(5)
 
-    # Step 7: Install Node-RED theme package and fix the missing theme issue
+    # Step 8: Install Node-RED theme package and fix the missing theme issue
     run_shell_command("mkdir -p /home/Automata/.node-red/node_modules/@node-red-contrib-themes/theme-collection/themes", step, total_steps, "Creating theme collection directory...")
     run_shell_command("cd /home/Automata/.node-red && npm install @node-red-contrib-themes/theme-collection", step, total_steps, "Installing Node-RED theme package...")
     sleep(5)
     step += 1
 
-    # Step 8: Install Node-RED
+    # Step 9: Install Node-RED
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", step, total_steps, "Installing Node-RED...")
     update_progress(step, total_steps, "Node-RED installation process initiated...")
     sleep(5)
@@ -138,7 +142,7 @@ def show_reboot_prompt():
     final_label = tk.Label(final_window, text="Automata Building Management & HVAC Controller", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
     final_label.pack(pady=20)
 
-    final_message = tk.Label(final_window, text="A New World of Automation Awaits!\nPlease reboot to finalize settings and configuration files.\n\nReboot Now?", font=("Helvetica", 14), fg="orange", bg="#2e2e2e")
+    final_message = tk.Label(final_window, text="A New Realm of Automation Awaits!\nPlease reboot to finalize settings and configuration files.\n\nReboot Now?", font=("Helvetica", 14), fg="orange", bg="#2e2e2e")
     final_message.pack(pady=20)
 
     button_frame = tk.Frame(final_window, bg='#2e2e2e')
