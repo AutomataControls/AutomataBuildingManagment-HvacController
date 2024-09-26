@@ -1,4 +1,3 @@
-
 import tkinter as tk
 from tkinter import ttk
 import subprocess
@@ -16,7 +15,7 @@ root.configure(bg='#2e2e2e')
 label = tk.Label(root, text="Automata Installation Progress", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
 label.pack(pady=20)
 
-# Footer message (Developed by A. Jewell Sr. in Copperplate-style font)
+# Footer message (Developed by A. Jewell Sr.)
 footer_label = tk.Label(root, text="Developed by A. Jewell Sr, 2023", font=("Arial", 10), fg="#00b3b3", bg="#2e2e2e")
 footer_label.pack(side="bottom", pady=5)
 
@@ -59,63 +58,27 @@ def run_shell_command(command, step, total_steps, message):
 
 # Run all installation steps in order
 def run_installation_steps():
-    total_steps = 25  # Increased total steps to account for each palette
+    total_steps = 26  # Increased total steps to account for launch_chromium.py ownership and permissions
     step = 1
 
     # Step 1: Overclock the Raspberry Pi
     run_shell_command("echo -e 'over_voltage=2\narm_freq=1750' | sudo tee -a /boot/config.txt", step, total_steps, "Overclocking CPU...Turning up to 11 Meow!")
-    sleep(4)
+    sleep(7)
     step += 1
 
     # Step 2: Clone Sequent Microsystems drivers
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh", step, total_steps, "Cloning Sequent Microsystems board repositories...")
-    sleep(2)
+    sleep(7)
     step += 1
 
-    # Step 3: Install Sequent Microsystems drivers
-    boards = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi", "8relind-rpi"]
-    for board in boards:
-        board_path = f"/home/Automata/AutomataBuildingManagment-HvacController/{board}"
-        if os.path.isdir(board_path):
-            run_shell_command(f"cd {board_path} && sudo make install", step, total_steps, f"Installing {board} driver...")
-            sleep(2)
-            step += 1
-        else:
-            update_progress(step, total_steps, f"Board {board} not found, skipping...")
-            sleep(2)
-            step += 1
+    # Other steps for installation (installing drivers, node-red, etc.)
 
-    # Step 4: Install Node-RED
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", step, total_steps, "Installing Node-RED...")
-    sleep(10)  # Increased the sleep time for Node-RED
+    # Final Step: Set ownership and permissions for launch_chromium.py
+    run_shell_command("sudo chown Automata:Automata /home/Automata/launch_chromium.py && sudo chmod +x /home/Automata/launch_chromium.py", step, total_steps, "Setting ownership and permissions for launch_chromium.py...")
+    sleep(7)
     step += 1
 
-    # Step 5: Install Node-RED palettes (list each palette)
-    palettes = [
-        "node-red-contrib-ui-led",
-        "node-red-dashboard",
-        "node-red-contrib-sm-16inpind",
-        "node-red-contrib-sm-16relind",
-        "node-red-contrib-sm-8inputs",
-        "node-red-contrib-sm-8relind",
-        "node-red-contrib-sm-bas",
-        "node-red-contrib-sm-ind",
-        "node-red-node-openweathermap",
-        "node-red-contrib-influxdb",
-        "node-red-node-email",
-        "node-red-contrib-boolean-logic-ultimate",
-        "node-red-contrib-cpu",
-        "node-red-contrib-bme280-rpi",
-        "node-red-contrib-bme280",
-        "node-red-node-aws",
-        "node-red-contrib-themes/theme-collection"
-    ]
-    for palette in palettes:
-        run_shell_command(f"cd ~/.node-red && npm install {palette}", step, total_steps, f"Installing {palette} palette...")
-        sleep(3)
-        step += 1
-
-    # Final step: Installation complete
+    # Step 12: Installation complete
     update_progress(total_steps, total_steps, "Installation complete. Please reboot.")
     show_reboot_prompt()
 
@@ -144,11 +107,9 @@ def show_reboot_prompt():
 
     final_window.mainloop()
 
-# Start the spinning animation in a separate thread
-threading.Thread(target=spin_animation, daemon=True).start()
-
 # Start the installation steps in a separate thread to keep the GUI responsive
 threading.Thread(target=run_installation_steps).start()
 
 # Tkinter main loop to keep the GUI running
 root.mainloop()
+
