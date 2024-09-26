@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 # Create Python GUI for board update progress
 UPDATE_GUI="/home/Automata/update_progress_gui.py"
@@ -73,9 +73,8 @@ def run_update_steps():
             cpuid = get_cpuid(f"/home/Automata/AutomataBuildingManagment-HvacController/{board}")
             update_progress(step, total_steps, f"Updating {board} (CPU ID: {cpuid})...")
 
-            # Run the update script in a new terminal window using lxterminal
-            lxterminal_command = f"lxterminal --command='bash -c \"cd /home/Automata/AutomataBuildingManagment-HvacController/{board}/update && ./update 0\"'"
-            result = subprocess.run(lxterminal_command, shell=True, text=True, capture_output=True)
+            # Run the update script directly
+            result = run_shell_command(f"cd /home/Automata/AutomataBuildingManagment-HvacController/{board}/update && sudo ./update 0", step, total_steps, f"Running update for {board}...")
 
             if result.returncode == 0:
                 success = True
@@ -115,8 +114,11 @@ Restart=on-failure
 [Install]
 WantedBy=multi-user.target
     '''
-    with open('/etc/systemd/system/chromium-launch.service', 'w') as f:
+    with open('/home/Automata/chromium-launch.service', 'w') as f:
         f.write(chromium_service)
+
+    # Move the file to the systemd directory with elevated permissions
+    run_shell_command("sudo mv /home/Automata/chromium-launch.service /etc/systemd/system/", step, total_steps, "Moving Chromium service to systemd directory")
     run_shell_command("sudo systemctl enable chromium-launch.service", step, total_steps, "Enabling Chromium auto-launch service")
     sleep(2)
     step += 1
@@ -203,4 +205,3 @@ chmod +x $UPDATE_GUI
 
 # Run the Python GUI script
 python3 $UPDATE_GUI
-
