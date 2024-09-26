@@ -9,7 +9,7 @@ lxterminal --command="bash -c 'bash <(curl -sL https://raw.githubusercontent.com
 echo "Node-RED installation process initiated."
 
 # Wait for Node-RED to install before continuing
-sleep 120
+sleep 3
 
 # Set up Node-RED security
 echo "Setting up Node-RED security..."
