@@ -85,7 +85,7 @@ def create_desktop_icon():
 
 # Run all installation steps in order
 def run_installation_steps():
-    total_steps = 28  # Adjusted total steps
+    total_steps = 30  # Adjusted total steps
     step = 1
 
     # Step 1: Overclock the Raspberry Pi
@@ -93,12 +93,18 @@ def run_installation_steps():
     sleep(5)
     step += 1
 
-    # Step 2: Increase swap size
+    # Step 2: Create LXDE wallpaper config file with "Fill" mode
+    run_shell_command("mkdir -p /home/Automata/.config/pcmanfm/LXDE-pi", step, total_steps, "Creating LXDE config directory...")
+    run_shell_command("cat <<EOL > /home/Automata/.config/pcmanfm/LXDE-pi/desktop-items-0.conf\n[*]\nwallpaper=/home/Automata/splash.png\nwallpaper_mode=stretch\nEOL", step, total_steps, "Setting wallpaper to Fill mode in LXDE config...")
+    sleep(2)
+    step += 1
+
+    # Step 3: Increase swap size
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh", step, total_steps, "Increasing swap size...")
     sleep(5)
     step += 1
 
-    # Step 3: Clone Sequent Microsystems drivers
+    # Step 4: Clone Sequent Microsystems drivers
     boards_to_clone = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi", "8relind-rpi"]
     for board in boards_to_clone:
         run_shell_command(f"git clone https://github.com/sequentmicrosystems/{board}.git /home/Automata/AutomataBuildingManagment-HvacController/{board}", step, total_steps, f"Cloning {board}...")
@@ -106,7 +112,7 @@ def run_installation_steps():
         sleep(3.5)
         step += 1
 
-    # Step 4: Install Sequent Microsystems drivers
+    # Step 5: Install Sequent Microsystems drivers
     boards = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi", "8relind-rpi"]
     for board in boards:
         board_path = f"/home/Automata/AutomataBuildingManagment-HvacController/{board}"
@@ -119,13 +125,13 @@ def run_installation_steps():
             step += 1
         sleep(5)
 
-    # Step 5: Install the Node-RED theme package and fix the missing theme issue
+    # Step 6: Install Node-RED theme package and fix the missing theme issue
     run_shell_command("mkdir -p /home/Automata/.node-red/node_modules/@node-red-contrib-themes/theme-collection/themes", step, total_steps, "Creating theme collection directory...")
     run_shell_command("cd /home/Automata/.node-red && npm install @node-red-contrib-themes/theme-collection", step, total_steps, "Installing Node-RED theme package...")
     sleep(5)
     step += 1
 
-    # Step 6: Install Node-RED
+    # Step 7: Install Node-RED
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", step, total_steps, "Installing Node-RED...")
     update_progress(step, total_steps, "Node-RED installation process initiated...")
     sleep(5)
@@ -136,7 +142,7 @@ def run_installation_steps():
     update_progress(step, total_steps, "Node-RED security setup completed.")
     step += 1
 
-    # Step 7: Install Node-RED palettes
+    # Step 8: Install Node-RED palettes
     palettes = [
         "node-red-contrib-ui-led", "node-red-dashboard", "node-red-contrib-sm-16inpind",
         "node-red-contrib-sm-16relind", "node-red-contrib-sm-8inputs", "node-red-contrib-sm-8relind",
@@ -151,17 +157,22 @@ def run_installation_steps():
         step += 1
     update_progress(step, total_steps, "Node-RED installation and security setup completed and patches applied.")
 
-    # Step 8: Configure interfaces (i2c, spi, vnc, etc.)
+    # Step 9: Execute set_full_logo_image_rpi4.sh from repo directory
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_full_logo_image_rpi4.sh", step, total_steps, "Setting full logo image as splash screen...")
+    sleep(2)
+    step += 1
+
+    # Step 10: Configure interfaces (i2c, spi, vnc, etc.)
     run_shell_command("sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_rgpio 0 && sudo raspi-config nonint do_blanking 1", step, total_steps, "Configuring interfaces (I2C, SPI, VNC, etc.)...")
     sleep(5)
     step += 1
 
-    # Step 9: Set ownership and permissions for launch_chromium.py
+    # Step 11: Set ownership and permissions for launch_chromium.py
     run_shell_command("sudo chown Automata:Automata /home/Automata/launch_chromium.py && sudo chmod +x /home/Automata/launch_chromium.py", step, total_steps, "Setting ownership and permissions for launch_chromium.py...")
     sleep(2.5)
     step += 1
 
-    # Step 10: Create desktop icon for updating Sequent boards
+    # Step 12: Create desktop icon for updating Sequent boards
     update_progress(step, total_steps, "Creating desktop icon for Sequent board updates...")
     create_desktop_icon()
     step += 1
@@ -203,4 +214,3 @@ threading.Thread(target=spin_animation, daemon=True).start()
 
 # Tkinter main loop to keep the GUI running
 root.mainloop()
-
