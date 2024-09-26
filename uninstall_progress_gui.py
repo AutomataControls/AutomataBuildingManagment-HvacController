@@ -1,8 +1,48 @@
+#!/bin/bash
+
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+# Function to log messages
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOGFILE"
+}
+
+# Function to handle errors
+handle_error() {
+    log "Error occurred in line $1"
+    exit 1
+}
+
+# Set up error handling
+trap 'handle_error $LINENO' ERR
+
+# Function to run shell commands and log their execution
+run_shell_command() {
+    local command="$1"
+    eval "$command"
+}
+
+# Step 1: Ensure the script is running as root
+if [ "$EUID" -ne 0 ]; then
+    echo "Please run as root. Re-running with sudo..."
+    sudo bash "$0" "$@"
+    exit
+fi
+
+# Step 2: Log file setup
+LOGFILE="/home/Automata/uninstall_log.txt"
+log "Uninstallation started"
+
+# Step 3: Set up the Tkinter GUI for uninstallation progress
+log "Setting up GUI for uninstallation progress..."
+UNINSTALL_GUI="/home/Automata/uninstall_gui.py"
+cat << 'EOF' > $UNINSTALL_GUI
 import tkinter as tk
 from tkinter import ttk
 import subprocess
 import threading
-import os  # Ensure os module is imported for directory checking
+import os
 
 # Create the main window
 root = tk.Tk()
@@ -10,7 +50,7 @@ root.title("Automata Uninstallation Progress")
 
 # Set window size and position
 root.geometry("600x400")
-root.configure(bg='#2e2e2e')  # Dark grey background
+root.configure(bg='#2e2e2e')
 
 # Title message
 label = tk.Label(root, text="Automata Uninstallation Progress", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
@@ -104,4 +144,12 @@ threading.Thread(target=run_uninstallation_steps).start()
 
 # Tkinter loop runs in the background while uninstallation runs
 root.mainloop()
+EOF
+
+# Ensure the Python script has execute permissions
+chmod +x $UNINSTALL_GUI
+
+# Run the Python GUI script
+python3 $UNINSTALL_GUI
+
 
