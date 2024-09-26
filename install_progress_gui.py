@@ -1,4 +1,4 @@
-import tkinter as tk
+import tkinter as tk 
 from tkinter import ttk
 import subprocess
 import threading
@@ -58,20 +58,25 @@ def run_shell_command(command, step, total_steps, message):
 
 # Run all installation steps in order
 def run_installation_steps():
-    total_steps = 26
+    total_steps = 27  # Total steps updated
     step = 1
 
     # Step 1: Overclock the Raspberry Pi
-    run_shell_command("echo -e 'over_voltage=2\narm_freq=1750' | sudo tee -a /boot/config.txt", step, total_steps, "Overclocking CPU...Turning up to 11 Meow!")
+    run_shell_command("echo -e 'over_voltage=2\narm_freq=1750' | sudo tee -a /boot/config.txt", step, total_steps, "Overclocking CPU...Turbo mode engaged!")
     sleep(4)
     step += 1
 
-    # Step 2: Clone Sequent Microsystems drivers
+    # Step 2: Increase swap size
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh", step, total_steps, "Increasing swap size...")
+    sleep(5)
+    step += 1
+
+    # Step 3: Clone Sequent Microsystems drivers
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh", step, total_steps, "Cloning Sequent Microsystems board repositories...")
     sleep(2.2)
     step += 1
 
-    # Step 3: Install Sequent Microsystems drivers
+    # Step 4: Install Sequent Microsystems drivers
     boards = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi", "8relind-rpi"]
     for board in boards:
         board_path = f"/home/Automata/AutomataBuildingManagment-HvacController/{board}"
@@ -84,12 +89,12 @@ def run_installation_steps():
             step += 1
         sleep(2.2)
 
-    # Step 4: Install Node-RED
-    run_shell_command("lxterminal --command='bash -c \"bash <(curl -sL https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered); exec bash\"'", step, total_steps, "Installing Node-RED...")
+    # Step 5: Install Node-RED
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node-red.sh", step, total_steps, "Installing Node-RED...")
     sleep(10)
     step += 1
 
-    # Step 5: Install Node-RED palettes
+    # Step 6: Install Node-RED palettes
     palettes = [
         "node-red-contrib-ui-led", "node-red-dashboard", "node-red-contrib-sm-16inpind",
         "node-red-contrib-sm-16relind", "node-red-contrib-sm-8inputs", "node-red-contrib-sm-8relind",
@@ -103,7 +108,7 @@ def run_installation_steps():
         sleep(2.45)
         step += 1
 
-    # Step 6: Set ownership and permissions for launch_chromium.py
+    # Step 7: Set ownership and permissions for launch_chromium.py
     run_shell_command("sudo chown Automata:Automata /home/Automata/launch_chromium.py && sudo chmod +x /home/Automata/launch_chromium.py", step, total_steps, "Setting ownership and permissions for launch_chromium.py...")
     sleep(2.5)
     step += 1
