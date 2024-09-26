@@ -39,17 +39,33 @@ log "Installing minimal dependencies for GUI creation..."
 apt-get update
 apt-get install -y python3-tk python3-pil python3-pil.imagetk gnome-terminal
 
-# Step 4: Copy the installation progress GUI script from the repo and set permissions
+# Step 4: Clone the repository and set permissions
+REPO_DIR="/home/Automata/AutomataBuildingManagment-HvacController"
+log "Cloning AutomataControls repository..."
+if [ ! -d "$REPO_DIR" ]; then
+    git clone https://github.com/your-repo-url.git "$REPO_DIR"
+    log "Repository cloned successfully!"
+else
+    log "Repository already exists, skipping clone."
+fi
+
+# Immediately set permissions after cloning for redundancy
+log "Setting permissions for files in repository..."
+find "$REPO_DIR" -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \; 2>> "$LOGFILE"
+find "$REPO_DIR" -type f -name "*.png" -exec chmod +r {} \; 2>> "$LOGFILE"
+chown -R Automata:Automata "$REPO_DIR"
+
+# Step 5: Copy the installation progress GUI script from the repo and set permissions
 log "Copying installation progress GUI script and setting permissions..."
-cp /home/Automata/AutomataBuildingManagment-HvacController/install_progress_gui.py /home/Automata/install_progress_gui.py
+cp "$REPO_DIR/install_progress_gui.py" /home/Automata/install_progress_gui.py
 chmod +x /home/Automata/install_progress_gui.py
 chown Automata:Automata /home/Automata/install_progress_gui.py
 
-# Step 5: Run the installation progress GUI
+# Step 6: Run the installation progress GUI
 log "Running installation GUI..."
 sudo -u Automata DISPLAY=:0 python3 /home/Automata/install_progress_gui.py &
 
-# Step 6: Kill lingering services before continuing
+# Step 7: Kill lingering services before continuing
 log "Killing lingering services (Node-RED, Mosquitto)..."
 services=('nodered' 'mosquitto')
 for service in "${services[@]}"; do
@@ -59,11 +75,10 @@ for service in "${services[@]}"; do
     fi
 done
 
-# Step 7: Set permissions for repository and Automata files after reboot
-log "Setting permissions for files in repository..."
-REPO_DIR="/home/Automata/AutomataBuildingManagment-HvacController"
+# Step 8: Set permissions for repository and Automata files after reboot
+log "Setting permissions for files in repository (redundant step after cloning)..."
 if [ -d "$REPO_DIR" ]; then
-    log "Setting permissions for files in repository directory..."
+    log "Re-setting permissions for files in repository directory..."
     
     # Ensure executable permissions for .sh, .py files
     find "$REPO_DIR" -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \; 2>> "$LOGFILE"
@@ -80,7 +95,7 @@ if [ -d "$REPO_DIR" ]; then
     chown -R Automata:Automata /home/Automata
 fi
 
-# Step 8: Enable single-click execution in PCManFM (file manager)
+# Step 9: Enable single-click execution in PCManFM (file manager)
 log "Enabling single-click execution for desktop icons..."
 PCMANFM_CONFIG_DIR="/home/Automata/.config/pcmanfm/LXDE-pi"
 mkdir -p "$PCMANFM_CONFIG_DIR"
