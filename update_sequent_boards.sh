@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # Create Python GUI for board update progress
@@ -73,7 +74,7 @@ def run_update_steps():
             cpuid = get_cpuid(f"/home/Automata/AutomataBuildingManagment-HvacController/{board}")
             update_progress(step, total_steps, f"Updating {board} (CPU ID: {cpuid})...")
 
-            # Run the update script directly
+            # Change directory and run the update script directly
             result = run_shell_command(f"cd /home/Automata/AutomataBuildingManagment-HvacController/{board}/update && sudo ./update 0", step, total_steps, f"Running update for {board}...")
 
             if result.returncode == 0:
