@@ -33,7 +33,7 @@ def update_progress(step, total_steps, message):
     status_label.config(text=message)
     root.update_idletasks()
 
-# Function to run shell commands (no sudo needed except for specific steps)
+# Function to run shell commands
 def run_shell_command(command, step, total_steps, message):
     update_progress(step, total_steps, message)
     result = subprocess.run(command, shell=True, text=True, capture_output=True)
@@ -46,10 +46,10 @@ def run_shell_command(command, step, total_steps, message):
 
 # Run all installation steps in order
 def run_installation_steps():
-    total_steps = 16
+    total_steps = 15
     step = 1
 
-    # Step 1: Slightly overclock the Raspberry Pi (sudo needed here)
+    # Step 1: Slightly overclock the Raspberry Pi
     run_shell_command("echo -e 'over_voltage=2\narm_freq=1750' | sudo tee -a /boot/config.txt", step, total_steps, "Overclocking CPU...Turning up to 11 Meow!")
     sleep(15)
     step += 1
@@ -65,21 +65,44 @@ def run_installation_steps():
         board_path = f"/home/Automata/AutomataBuildingManagment-HvacController/{board}"
         if os.path.isdir(board_path):
             run_shell_command(f"cd {board_path} && sudo make install", step, total_steps, f"Installing {board} driver...")
+            update_progress(step, total_steps, f"Cloned {board} - Success!")
+            sleep(20)
+            update_progress(step, total_steps, f"Make install {board} - Success!")
             step += 1
         else:
             update_progress(step, total_steps, f"Board {board} not found, skipping...")
             step += 1
-        sleep(60)
+        sleep(15)
 
     # Step 4: Install Node-RED
     run_shell_command("bash <(curl -sL https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered)", step, total_steps, "Installing Node-RED...")
     sleep(120)
     step += 1
 
-    # Step 5: Install Node-RED palettes (using script from repo)
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh", step, total_steps, "Installing Node-RED palettes...")
-    sleep(120)
-    step += 1
+    # Step 5: Install Node-RED palettes (list each palette)
+    palettes = [
+        "node-red-contrib-ui-led",
+        "node-red-dashboard",
+        "node-red-contrib-sm-16inpind",
+        "node-red-contrib-sm-16relind",
+        "node-red-contrib-sm-8inputs",
+        "node-red-contrib-sm-8relind",
+        "node-red-contrib-sm-bas",
+        "node-red-contrib-sm-ind",
+        "node-red-node-openweathermap",
+        "node-red-contrib-influxdb",
+        "node-red-node-email",
+        "node-red-contrib-boolean-logic-ultimate",
+        "node-red-contrib-cpu",
+        "node-red-contrib-bme280-rpi",
+        "node-red-contrib-bme280",
+        "node-red-node-aws",
+        "node-red-contrib-themes/theme-collection"
+    ]
+    for palette in palettes:
+        run_shell_command(f"cd ~/.node-red && npm install {palette}", step, total_steps, f"Installing {palette} palette...")
+        sleep(15)
+        step += 1
 
     # Step 6: Move splash screen
     run_shell_command("sudo mv /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/splash.png", step, total_steps, "Moving splash.png...")
@@ -99,7 +122,7 @@ def run_installation_steps():
     # Step 9: Install Mosquitto
     run_shell_command("sudo apt-get install -y mosquitto mosquitto-clients", step, total_steps, "Installing Mosquitto...")
     run_shell_command("sudo touch /etc/mosquitto/passwd && sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2", step, total_steps, "Setting Mosquitto password file...")
-    sleep(20)
+    sleep(15)
     step += 1
 
     # Step 10: Increase swap size
@@ -141,4 +164,3 @@ threading.Thread(target=run_installation_steps).start()
 
 # Tkinter main loop to keep the GUI running
 root.mainloop()
-
