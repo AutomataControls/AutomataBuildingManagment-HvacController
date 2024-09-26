@@ -152,11 +152,11 @@ def run_installation_steps():
     # Step 10: Install Node-RED
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", step, total_steps, "Installing Node-RED...")
     update_progress(step, total_steps, "Node-RED Security Measures initiated...")
-    sleep(5)
+    sleep(8)
     
     # Reflect Node-RED security setup
     update_progress(step, total_steps, "Setting up Node-RED security...")
-    sleep(2)  # Simulate security setup time
+    sleep(8)  # Simulate security setup time
     update_progress(step, total_steps, "Node-RED User and Password Security & VPN setup Successful!\n Welcome Automata.")
     step += 1
 
