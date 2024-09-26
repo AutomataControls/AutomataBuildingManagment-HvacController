@@ -63,7 +63,7 @@ def run_installation_steps():
 
     # Step 1: Backup original wallpaper and copy Automata logo
     run_shell_command("cd /usr/share/plymouth/themes/pix/ && sudo mv splash.png splash.png.bk", step, total_steps, "Backing up original wallpaper...")
-    run_shell_command("sudo cp /home/pi/splash.png /usr/share/plymouth/themes/pix/", step, total_steps, "Copying Automata logo...")
+    run_shell_command("sudo cp /home/Automata/splash.png /usr/share/plymouth/themes/pix/", step, total_steps, "Copying Automata logo...")
     sleep(3)
     step += 1
     update_progress(step, total_steps, "Move Successful!")
