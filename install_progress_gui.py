@@ -68,7 +68,7 @@ def run_installation_steps():
 
     # Step 2: Clone Sequent Microsystems drivers
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh", step, total_steps, "Cloning Sequent Microsystems board repositories...")
-    sleep(1.8)
+    sleep(2.2)
     step += 1
 
     # Step 3: Install Sequent Microsystems drivers
@@ -82,11 +82,11 @@ def run_installation_steps():
         else:
             update_progress(step, total_steps, f"Board {board} not found, skipping...")
             step += 1
-        sleep(1.435)
+        sleep(2.2)
 
     # Step 4: Install Node-RED
     run_shell_command("lxterminal --command='bash -c \"bash <(curl -sL https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered); exec bash\"'", step, total_steps, "Installing Node-RED...")
-    sleep(15)
+    sleep(10)
     step += 1
 
     # Step 5: Install Node-RED palettes
@@ -105,7 +105,7 @@ def run_installation_steps():
 
     # Step 6: Set ownership and permissions for launch_chromium.py
     run_shell_command("sudo chown Automata:Automata /home/Automata/launch_chromium.py && sudo chmod +x /home/Automata/launch_chromium.py", step, total_steps, "Setting ownership and permissions for launch_chromium.py...")
-    sleep(1.5)
+    sleep(2.5)
     step += 1
 
     # Final Step: Installation complete
