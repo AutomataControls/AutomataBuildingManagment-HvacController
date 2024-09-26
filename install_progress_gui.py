@@ -48,7 +48,7 @@ def update_progress(step, total_steps, message):
 # Function to run shell commands
 def run_shell_command(command, step, total_steps, message):
     update_progress(step, total_steps, message)
-    result = subprocess.run(command, shell=True, text=True, capture_output=True, timeout=600)  # Added timeout
+    result = subprocess.run(command, shell=True, text=True, capture_output=True, timeout=600)
     if result.returncode != 0:
         status_label.config(text=f"Error during: {message}. Check logs for details.")
         print(f"Error output: {result.stderr}")
@@ -58,27 +58,57 @@ def run_shell_command(command, step, total_steps, message):
 
 # Run all installation steps in order
 def run_installation_steps():
-    total_steps = 26  # Increased total steps to account for launch_chromium.py ownership and permissions
+    total_steps = 26
     step = 1
 
     # Step 1: Overclock the Raspberry Pi
     run_shell_command("echo -e 'over_voltage=2\narm_freq=1750' | sudo tee -a /boot/config.txt", step, total_steps, "Overclocking CPU...Turning up to 11 Meow!")
-    sleep(7)
+    sleep(4)
     step += 1
 
     # Step 2: Clone Sequent Microsystems drivers
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh", step, total_steps, "Cloning Sequent Microsystems board repositories...")
-    sleep(7)
+    sleep(1.8)
     step += 1
 
-    # Other steps for installation (installing drivers, node-red, etc.)
+    # Step 3: Install Sequent Microsystems drivers
+    boards = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi", "8relind-rpi"]
+    for board in boards:
+        board_path = f"/home/Automata/AutomataBuildingManagment-HvacController/{board}"
+        if os.path.isdir(board_path):
+            run_shell_command(f"cd {board_path} && sudo make install", step, total_steps, f"Installing {board} driver...")
+            update_progress(step, total_steps, f"{board} driver installed successfully!")
+            step += 1
+        else:
+            update_progress(step, total_steps, f"Board {board} not found, skipping...")
+            step += 1
+        sleep(1.435)
 
-    # Final Step: Set ownership and permissions for launch_chromium.py
+    # Step 4: Install Node-RED
+    run_shell_command("lxterminal --command='bash -c \"bash <(curl -sL https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered); exec bash\"'", step, total_steps, "Installing Node-RED...")
+    sleep(15)
+    step += 1
+
+    # Step 5: Install Node-RED palettes
+    palettes = [
+        "node-red-contrib-ui-led", "node-red-dashboard", "node-red-contrib-sm-16inpind",
+        "node-red-contrib-sm-16relind", "node-red-contrib-sm-8inputs", "node-red-contrib-sm-8relind",
+        "node-red-contrib-sm-bas", "node-red-contrib-sm-ind", "node-red-node-openweathermap",
+        "node-red-contrib-influxdb", "node-red-node-email", "node-red-contrib-boolean-logic-ultimate",
+        "node-red-contrib-cpu", "node-red-contrib-bme280-rpi", "node-red-contrib-bme280",
+        "node-red-node-aws", "node-red-contrib-themes/theme-collection"
+    ]
+    for palette in palettes:
+        run_shell_command(f"cd ~/.node-red && npm install {palette}", step, total_steps, f"Installing {palette} palette...")
+        sleep(2.45)
+        step += 1
+
+    # Step 6: Set ownership and permissions for launch_chromium.py
     run_shell_command("sudo chown Automata:Automata /home/Automata/launch_chromium.py && sudo chmod +x /home/Automata/launch_chromium.py", step, total_steps, "Setting ownership and permissions for launch_chromium.py...")
-    sleep(7)
+    sleep(1.5)
     step += 1
 
-    # Step 12: Installation complete
+    # Final Step: Installation complete
     update_progress(total_steps, total_steps, "Installation complete. Please reboot.")
     show_reboot_prompt()
 
@@ -110,6 +140,8 @@ def show_reboot_prompt():
 # Start the installation steps in a separate thread to keep the GUI responsive
 threading.Thread(target=run_installation_steps).start()
 
+# Start spinner animation in a separate thread
+threading.Thread(target=spin_animation, daemon=True).start()
+
 # Tkinter main loop to keep the GUI running
 root.mainloop()
-
