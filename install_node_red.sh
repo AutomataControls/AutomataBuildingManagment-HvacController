@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Install or update Node.js and Node-RED as the Automata user
-echo "Installing or updating Node-RED as the 'Automata' user..."
-sudo -u Automata -H bash -c '
-    bash <(curl -sL https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered)
-'
+# Install or update Node-RED by downloading and running the official Node-RED installer script
+echo "Running the Node-RED installation script..."
+
+# Download and execute the Node-RED installation script directly
+bash <(curl -sL https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered)
 
 # Enable Node-RED service to start on boot (system-wide)
 echo "Enabling Node-RED to start on boot..."
