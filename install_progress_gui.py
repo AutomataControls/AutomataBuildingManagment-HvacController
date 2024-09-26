@@ -46,8 +46,10 @@ def update_progress(step, total_steps, message):
     root.update_idletasks()
 
 # Function to run shell commands
-def run_shell_command(command, step, total_steps, message):
+def run_shell_command(command, step, total_steps, message, use_sudo=False):
     update_progress(step, total_steps, message)
+    if use_sudo:
+        command = "sudo " + command
     result = subprocess.run(command, shell=True, text=True, capture_output=True, timeout=600)
     if result.returncode != 0:
         status_label.config(text=f"Error during: {message}. Check logs for details.")
@@ -95,30 +97,30 @@ def run_installation_steps():
     step += 1
 
     # Step 2: Navigate to /usr/share/plymouth/themes/pix/, move the original splash.png and copy the new one
-    run_shell_command("cd /usr/share/plymouth/themes/pix/ && sudo mv splash.png splash.png.bk", step, total_steps, "Backing up original splash.png...")
-    run_shell_command("sudo cp /home/Automata/splash.png /usr/share/plymouth/themes/pix/", step, total_steps, "Copying Automata splash.png to Plymouth theme...")
+    run_shell_command("cd /usr/share/plymouth/themes/pix/ && sudo mv splash.png splash.png.bk", step, total_steps, "Backing up original splash.png...", use_sudo=True)
+    run_shell_command("sudo cp /home/Automata/splash.png /usr/share/plymouth/themes/pix/", step, total_steps, "Copying Automata splash.png to Plymouth theme...", use_sudo=True)
     sleep(2)
     step += 1
     update_progress(step, total_steps, "Splash logo move successful!")
 
     # Step 3: Set the clock to Eastern Standard Time (EST) via NTP
-    run_shell_command("sudo timedatectl set-timezone America/New_York && sudo timedatectl set-ntp true", step, total_steps, "Setting timezone to Eastern Standard Time (EST) and enabling NTP...")
+    run_shell_command("timedatectl set-timezone America/New_York && timedatectl set-ntp true", step, total_steps, "Setting timezone to Eastern Standard Time (EST) and enabling NTP...", use_sudo=True)
     sleep(2)
     step += 1
 
     # Step 4: Overclock the Raspberry Pi
-    run_shell_command("echo -e 'over_voltage=2\narm_freq=1750' | sudo tee -a /boot/config.txt", step, total_steps, "Overclocking CPU...Turbo mode engaged!")
+    run_shell_command("echo -e 'over_voltage=2\narm_freq=1750' | sudo tee -a /boot/config.txt", step, total_steps, "Overclocking CPU...Turbo mode engaged!", use_sudo=True)
     sleep(5)
     step += 1
 
     # Step 5: Create LXDE wallpaper config file with "Fill" mode
-    run_shell_command("mkdir -p /home/Automata/.config/pcmanfm/LXDE-pi", step, total_steps, "Creating LXDE config directory...")
-    run_shell_command("cat <<EOL > /home/Automata/.config/pcmanfm/LXDE-pi/desktop-items-0.conf\n[*]\nwallpaper=/home/Automata/splash.png\nwallpaper_mode=stretch\nEOL", step, total_steps, "Setting wallpaper to Fill mode in LXDE config...")
+    run_shell_command("mkdir -p /home/Automata/.config/pcmanfm/LXDE-pi", step, total_steps, "Creating LXDE config directory...", use_sudo=True)
+    run_shell_command("echo -e '[*]\nwallpaper=/home/Automata/splash.png\nwallpaper_mode=stretch' > /home/Automata/.config/pcmanfm/LXDE-pi/desktop-items-0.conf", step, total_steps, "Setting wallpaper to Fill mode in LXDE config...", use_sudo=True)
     sleep(2)
     step += 1
 
     # Step 6: Increase swap size
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh", step, total_steps, "Increasing swap size...")
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh", step, total_steps, "Increasing swap size...", use_sudo=True)
     sleep(5)
     step += 1
 
@@ -135,7 +137,7 @@ def run_installation_steps():
     for board in boards:
         board_path = f"/home/Automata/AutomataBuildingManagment-HvacController/{board}"
         if os.path.isdir(board_path):
-            run_shell_command(f"cd {board_path} && sudo make install", step, total_steps, f"Installing {board} driver...")
+            run_shell_command(f"cd {board_path} && sudo make install", step, total_steps, f"Installing {board} driver...", use_sudo=True)
             update_progress(step, total_steps, f"{board} driver installed successfully!")
             step += 1
         else:
@@ -144,13 +146,13 @@ def run_installation_steps():
         sleep(5)
 
     # Step 9: Install Node-RED theme package and fix the missing theme issue
-    run_shell_command("mkdir -p /home/Automata/.node-red/node_modules/@node-red-contrib-themes/theme-collection/themes", step, total_steps, "Creating theme collection directory...")
-    run_shell_command("cd /home/Automata/.node-red && npm install @node-red-contrib-themes/theme-collection", step, total_steps, "Installing Node-RED theme package...")
+    run_shell_command("mkdir -p /home/Automata/.node-red/node_modules/@node-red-contrib-themes/theme-collection/themes", step, total_steps, "Creating theme collection directory...", use_sudo=True)
+    run_shell_command("cd /home/Automata/.node-red && npm install @node-red-contrib-themes/theme-collection", step, total_steps, "Installing Node-RED theme package...", use_sudo=True)
     sleep(5)
     step += 1
 
     # Step 10: Install Node-RED
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", step, total_steps, "Installing Node-RED...")
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", step, total_steps, "Installing Node-RED...", use_sudo=True)
     update_progress(step, total_steps, "Node-RED Security Measures initiated...")
     sleep(8)
     
@@ -202,5 +204,4 @@ threading.Thread(target=spin_animation, daemon=True).start()
 
 # Tkinter main loop to keep the GUI running
 root.mainloop()
-
 
