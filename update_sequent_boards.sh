@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # Create Python GUI for board update progress
@@ -8,6 +9,7 @@ from tkinter import ttk
 import subprocess
 import threading
 import os
+from time import sleep  # Added the missing import
 
 def update_progress(step, total_steps, message):
     progress['value'] = (step / total_steps) * 100
@@ -21,9 +23,25 @@ def run_shell_command(command, step, total_steps, message):
         print(f"Error during {message}: {result.stderr}")
     else:
         print(f"{message} completed successfully.")
+    return result
+
+def get_cpuid(board_path):
+    cpuid_file = os.path.join(board_path, "update", "cpuid")
+    try:
+        if os.path.exists(cpuid_file):
+            with open(cpuid_file, "r") as f:
+                cpuid = f.read().strip()
+            if cpuid:
+                return cpuid
+            else:
+                return "CPU ID not found"
+        else:
+            return "CPU ID file missing"
+    except Exception as e:
+        return f"Error retrieving CPU ID: {str(e)}"
 
 def run_update_steps():
-    total_steps = 11  # Adjusted total steps
+    total_steps = 12  # Adjusted total steps
     success = False
 
     # Step 1: Stopping Node-RED services
@@ -46,12 +64,14 @@ def run_update_steps():
     for board in boards:
         board_update_script = f"/home/Automata/AutomataBuildingManagment-HvacController/{board}/update/update"
         if os.path.isfile(board_update_script):
-            # Ensure the 'update' script has execute permissions
             update_progress(step, total_steps, f"Setting executable permissions for {board} update script...")
             run_shell_command(f"sudo chmod +x {board_update_script}", step, total_steps, f"Setting executable permissions for {board}...")
 
+            # Fetch CPU ID and display it in the GUI
+            cpuid = get_cpuid(f"/home/Automata/AutomataBuildingManagment-HvacController/{board}")
+            update_progress(step, total_steps, f"Updating {board} (CPU ID: {cpuid})...")
+
             # Run the update script in a new terminal window using lxterminal
-            update_progress(step, total_steps, f"Updating {board}...")
             lxterminal_command = f"lxterminal --command='bash -c \"cd /home/Automata/AutomataBuildingManagment-HvacController/{board}/update && ./update 0\"'"
             result = subprocess.run(lxterminal_command, shell=True, text=True, capture_output=True)
 
@@ -137,6 +157,5 @@ chmod +x $UPDATE_GUI
 
 # Run the Python GUI script
 python3 $UPDATE_GUI
-
 
 
