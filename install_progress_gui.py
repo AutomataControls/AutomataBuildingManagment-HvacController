@@ -15,7 +15,7 @@ root.configure(bg='#2e2e2e')
 label = tk.Label(root, text="Automata Installation Progress", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
 label.pack(pady=20)
 
-# Footer message (Developed by A. Jewell Sr.)
+# Footer message (Developed by A. Jewell Sr. 2023)
 footer_label = tk.Label(root, text="Developed by A. Jewell Sr, 2023", font=("Helvetica", 10), fg="#00b3b3", bg="#2e2e2e")
 footer_label.pack(side="bottom", pady=5)
 
@@ -33,7 +33,7 @@ def update_progress(step, total_steps, message):
     status_label.config(text=message)
     root.update_idletasks()
 
-# Function to run shell commands (sudo only where needed)
+# Function to run shell commands
 def run_shell_command(command, step, total_steps, message):
     update_progress(step, total_steps, message)
     result = subprocess.run(command, shell=True, text=True, capture_output=True)
@@ -46,38 +46,32 @@ def run_shell_command(command, step, total_steps, message):
 
 # Run all installation steps in order
 def run_installation_steps():
-    total_steps = 15
+    total_steps = 14  # Adjusted total steps since overclocking was removed
     step = 1
 
-    # Step 1: Slightly overclock the Raspberry Pi
-    run_shell_command("echo -e 'over_voltage=2\narm_freq=1750' | sudo tee -a /boot/config.txt", step, total_steps, "Overclocking CPU...Turning up to 11 Meow!")
-    sleep(7)
-    step += 1
-
-    # Step 2: Clone Sequent Microsystems drivers
+    # Step 1: Clone Sequent Microsystems drivers
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh", step, total_steps, "Cloning Sequent Microsystems board repositories...")
     sleep(7)
     step += 1
 
-    # Step 3: Install Sequent Microsystems drivers
+    # Step 2: Install Sequent Microsystems drivers
     boards = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi", "8relind-rpi"]
     for board in boards:
         board_path = f"/home/Automata/AutomataBuildingManagment-HvacController/{board}"
         if os.path.isdir(board_path):
-            run_shell_command(f"sudo bash -c 'cd {board_path} && make install'", step, total_steps, f"Installing {board} driver...")
+            run_shell_command(f"cd {board_path} && sudo make install", step, total_steps, f"Installing {board} driver...")
+            sleep(7)
             update_progress(step, total_steps, f"{board} make install success!")
-            step += 1
         else:
             update_progress(step, total_steps, f"Board {board} not found, skipping...")
-            step += 1
-        sleep(7)
+        step += 1
 
-    # Step 4: Install Node-RED
+    # Step 3: Install Node-RED
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", step, total_steps, "Installing Node-RED...")
-    sleep(120)  # Long sleep for Node-RED installation
+    sleep(120)  # Longer sleep for Node-RED installation to complete
     step += 1
 
-    # Step 5: Install Node-RED palettes (list each palette)
+    # Step 4: Install Node-RED palettes (list each palette)
     palettes = [
         "node-red-contrib-ui-led",
         "node-red-dashboard",
@@ -102,23 +96,23 @@ def run_installation_steps():
         sleep(7)
         step += 1
 
-    # Step 6: Move splash screen
+    # Step 5: Move splash screen
     run_shell_command("sudo mv /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/splash.png", step, total_steps, "Moving splash.png...")
     sleep(7)
     step += 1
 
-    # Step 7: Configure interfaces (i2c, spi, vnc, etc.)
+    # Step 6: Configure interfaces (i2c, spi, vnc, etc.)
     run_shell_command("sudo raspi-config nonint do_i2c 0 && sudo raspi-config nonint do_spi 0 && sudo raspi-config nonint do_vnc 0 && sudo raspi-config nonint do_onewire 0 && sudo raspi-config nonint do_serial 1", step, total_steps, "Configuring interfaces...")
     sleep(7)
     step += 1
 
-    # Step 8: Install Mosquitto
+    # Step 7: Install Mosquitto
     run_shell_command("sudo apt-get install -y mosquitto mosquitto-clients", step, total_steps, "Installing Mosquitto...")
-    run_shell_command("sudo mosquitto_passwd -c /etc/mosquitto/passwd Automata && sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2", step, total_steps, "Setting Mosquitto password file...")
+    run_shell_command("sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2", step, total_steps, "Setting Mosquitto password file...")
     sleep(7)
     step += 1
 
-    # Step 9: Increase swap size
+    # Step 8: Increase swap size
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh", step, total_steps, "Increasing swap size...")
     sleep(7)
     step += 1
