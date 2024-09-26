@@ -61,17 +61,17 @@ def run_installation_steps():
     total_steps = 31  # Adjusted total steps
     step = 1
 
-    # Step 1: Copy splash.png from repository to /home/Automata
+    # Step 1: Copy splash.png from the repo directory to /home/Automata
     run_shell_command("cp /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/", step, total_steps, "Copying splash.png to /home/Automata...")
-    sleep(3)
+    sleep(2)
     step += 1
 
-    # Step 2: Backup original wallpaper and copy Automata logo
-    run_shell_command("cd /usr/share/plymouth/themes/pix/ && sudo mv splash.png splash.png.bk", step, total_steps, "Backing up original wallpaper...")
-    run_shell_command("sudo cp /home/Automata/splash.png /usr/share/plymouth/themes/pix/", step, total_steps, "Copying Automata logo...")
-    sleep(3)
+    # Step 2: Navigate to /usr/share/plymouth/themes/pix/, move the original splash.png and copy the new one
+    run_shell_command("cd /usr/share/plymouth/themes/pix/ && sudo mv splash.png splash.png.bk", step, total_steps, "Backing up original splash.png...")
+    run_shell_command("sudo cp /home/Automata/splash.png /usr/share/plymouth/themes/pix/", step, total_steps, "Copying Automata splash.png to Plymouth theme...")
+    sleep(2)
     step += 1
-    update_progress(step, total_steps, "Move Successful!")
+    update_progress(step, total_steps, "Splash logo move successful!")
 
     # Step 3: Overclock the Raspberry Pi
     run_shell_command("echo -e 'over_voltage=2\narm_freq=1750' | sudo tee -a /boot/config.txt", step, total_steps, "Overclocking CPU...Turbo mode engaged!")
