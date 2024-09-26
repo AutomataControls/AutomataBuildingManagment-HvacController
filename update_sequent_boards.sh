@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash 
 
 # Create Python GUI for board update progress
 UPDATE_GUI="/home/Automata/update_progress_gui.py"
@@ -53,14 +53,9 @@ def run_update_steps():
     run_shell_command("sudo systemctl disable nodered.service chromium-launch.service", 2, total_steps, "Disabling Node-RED and Chromium services")
     sleep(2)
 
-    # Step 3: Set permissions for launch_chromium.py
-    update_progress(3, total_steps, "Setting ownership and permissions for launch_chromium.py...")
-    run_shell_command("sudo chown Automata:Automata /home/Automata/launch_chromium.py && sudo chmod +x /home/Automata/launch_chromium.py", 3, total_steps, "Setting ownership and permissions for launch_chromium.py")
-    sleep(2)
+    step = 3  # Continue from here after services are stopped
 
-    step = 4  # Continue from here after permissions set
-
-    # Step 4-7: Board update process
+    # Step 3-7: Board update process
     boards = [
         "megabas-rpi",
         "megaind-rpi",
@@ -98,13 +93,61 @@ def run_update_steps():
     sleep(2)
     step += 1
 
-    # Step 9: Restart all services and reload daemons
+    # Step 9: Set permissions for launch_chromium.py
+    update_progress(step, total_steps, "Setting ownership and permissions for launch_chromium.py...")
+    run_shell_command("sudo chown Automata:Automata /home/Automata/launch_chromium.py && sudo chmod +x /home/Automata/launch_chromium.py", step, total_steps, "Setting ownership and permissions for launch_chromium.py")
+    sleep(2)
+    step += 1
+
+    # Step 10: Create a systemd service to launch Chromium at boot
+    update_progress(step, total_steps, "Creating a systemd service for Chromium auto-launch...")
+    chromium_service = '''
+[Unit]
+Description=Auto-launch Chromium at boot after network is up
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/chromium-browser --new-window http://127.0.0.1:1880/ http://127.0.0.1:1880/ui
+User=Automata
+Environment=DISPLAY=:0
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+    '''
+    with open('/etc/systemd/system/chromium-launch.service', 'w') as f:
+        f.write(chromium_service)
+    run_shell_command("sudo systemctl enable chromium-launch.service", step, total_steps, "Enabling Chromium auto-launch service")
+    sleep(2)
+    step += 1
+
+    # Step 11: Restart all services and reload daemons
     update_progress(step, total_steps, "Restarting Mosquitto, Node-RED, Chromium services, and reloading daemons...")
     run_shell_command("sudo systemctl start mosquitto.service nodered.service chromium-launch.service && sudo systemctl daemon-reload", step, total_steps, "Restarting all services and reloading daemons")
     sleep(2)
     step += 1
 
-    # Step 10: Final step - prompt for reboot
+    # Step 12: Create a desktop icon to open Node-RED UI pages
+    update_progress(step, total_steps, "Creating a desktop icon for Node-RED UI pages...")
+    desktop_icon_content = '''
+[Desktop Entry]
+Name=Open Node-RED UI
+Comment=Launch Node-RED interface
+Exec=chromium-browser --new-window http://127.0.0.1:1880/ http://127.0.0.1:1880/ui
+Icon=/home/Automata/AutomataBuildingManagment-HvacController/NodeRedLogo.png
+Terminal=false
+Type=Application
+Categories=Utility;
+    '''
+    with open('/home/Automata/Desktop/OpenNodeRedUI.desktop', 'w') as f:
+        f.write(desktop_icon_content)
+    
+    # Set the correct permissions and ownership for the icon
+    run_shell_command("chmod +x /home/Automata/Desktop/OpenNodeRedUI.desktop && chown Automata:Automata /home/Automata/Desktop/OpenNodeRedUI.desktop", step, total_steps, "Setting permissions for Node-RED desktop icon")
+    sleep(2)
+    step += 1
+
+    # Step 13: Final step - prompt for reboot
     if success:
         update_progress(step, total_steps, "Board update succeeded. Please reboot.")
     else:
