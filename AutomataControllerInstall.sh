@@ -24,13 +24,18 @@ run_shell_command() {
     local total_steps="$3"
     local message="$4"
 
-    log "[$step/$total_steps] $message"
+    update_progress "$step" "$total_steps" "$message"
     eval "$command"
+}
 
-    if [ $? -ne 0 ]; then
-        log "Error occurred while running: $command"
-        exit 1
-    fi
+# Set up progress function
+update_progress() {
+    local step="$1"
+    local total_steps="$2"
+    local message="$3"
+
+    echo "Progress: [$step/$total_steps] - $message" | tee -a "$LOGFILE"
+    # Update the GUI if it's running (replace with actual GUI update function if needed)
 }
 
 # Step 1: Ensure the script is running as root
@@ -76,29 +81,36 @@ over_voltage=2
 arm_freq=1750
 EOF
 
-# Step 8: Install Sequent MS Drivers, Node-RED, and other required steps (interactive Node-RED without closing)
-log "Installing Sequent Microsystems drivers and Node-RED..."
+# Step 8: Clone and install Sequent Microsystems board drivers
+log "Running Sequent Microsystems Install script..."
 
-# Install Sequent MS Drivers (Modify for each board)
+# Run the SequentMSInstall.sh script to clone the necessary repositories
+run_shell_command "bash /home/Automata/AutomataBuildingManagment-HvacController/SequentMSInstall.sh" 1 15 "Cloning Sequent Microsystems board repositories..."
+
+# List of boards to install
 boards=("megabas-rpi" "megaind-rpi" "16univin-rpi" "16relind-rpi" "8relind-rpi")
-total_steps=12
-step=1
+total_steps=15  # Adjust based on the number of steps
+step=2  # Start after cloning
+
 for board in "${boards[@]}"; do
     if [ -d "/home/Automata/AutomataBuildingManagment-HvacController/$board" ]; then
         log "Installing Sequent MS driver for $board..."
         run_shell_command "cd /home/Automata/AutomataBuildingManagment-HvacController/$board && sudo make install" "$step" "$total_steps" "Installing $board driver..."
         sleep 2
+        log "$board driver installed successfully!"
+        step=$((step + 1))
     else
         log "Board $board not found, skipping..."
+        update_progress "$step" "$total_steps" "Board $board not found, skipping..."
+        step=$((step + 1))
     fi
-    step=$((step + 1))
 done
 
-# Install Node-RED interactively (without closing the terminal)
-run_shell_command "bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh" "$step" "$total_steps" "Installing Node-RED interactively..."
+# Step 9: Install Node-RED interactively (without closing the terminal)
+run_shell_command "gnome-terminal -- bash -c 'bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh; exec bash'" "$step" "$total_steps" "Installing Node-RED interactively..."
 sleep 2
 
-# Install Node-RED palettes
+# Step 10: Install Node-RED palettes
 run_shell_command "bash /home/Automata/AutomataBuildingManagment-HvacController/InstallNodeRedPallete.sh" "$step" "$total_steps" "Installing Node-RED palettes..."
 sleep 2
 
@@ -127,7 +139,7 @@ sleep 2
 update_progress "$total_steps" "$total_steps" "Installation complete. Please reboot."
 show_reboot_prompt
 
-# Step 9: Set up Chromium Auto-launch
+# Step 11: Set up Chromium Auto-launch
 log "Setting up Chromium auto-launch..."
 AUTO_LAUNCH_SCRIPT="/home/Automata/launch_chromium.py"
 
@@ -169,7 +181,7 @@ EOF
 # Enable the service
 systemctl enable chromium-launch.service
 
-# Step 10: Set up systemd service to trigger update_progress_gui.py on reboot
+# Step 12: Set up systemd service to trigger update_progress_gui.py on reboot
 log "Setting up board update service for the next reboot..."
 
 cat << 'EOF' > /etc/systemd/system/update-boards.service
@@ -190,7 +202,7 @@ EOF
 # Enable the board update service to run once on the next reboot
 systemctl enable update-boards.service
 
-# Step 11: Permissions for the repo files after reboot
+# Step 13: Permissions for the repo files after reboot
 log "Setting permissions for files in repository after reboot..."
 REPO_DIR="/home/Automata/AutomataBuildingManagment-HvacController"
 if [ -d "$REPO_DIR" ]; then
