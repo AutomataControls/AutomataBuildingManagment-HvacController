@@ -110,7 +110,7 @@ def run_installation_steps():
         total_steps,
         "Overclocking CPU...Turning up to 11 Meow!"
     )
-    sleep(15)
+    sleep(7)
     step += 1
 
     # Step 2: Clone Sequent Microsystems drivers
@@ -120,7 +120,7 @@ def run_installation_steps():
         total_steps,
         "Cloning Sequent Microsystems board repositories..."
     )
-    sleep(15)
+    sleep(9)
     step += 1
 
     # Step 3: Install Sequent Microsystems drivers
@@ -153,7 +153,7 @@ def run_installation_steps():
                 f"Board {board} not found, skipping..."
             )
             step += 1
-        sleep(15)
+        sleep(9)
 
     # Step 4: Install Node-RED
     run_shell_command(
@@ -162,7 +162,7 @@ def run_installation_steps():
         total_steps,
         "Installing Node-RED..."
     )
-    sleep(15)
+    sleep(120)
     step += 1
 
     # Step 5: Install Node-RED palettes
@@ -192,7 +192,7 @@ def run_installation_steps():
             total_steps,
             f"Installing {palette} palette..."
         )
-        sleep(15)
+        sleep(25)
         step += 1
 
     # Step 6: Move splash screen
@@ -202,7 +202,7 @@ def run_installation_steps():
         total_steps,
         "Moving splash.png..."
     )
-    sleep(15)
+    sleep(7)
     step += 1
 
     # Step 7: Set boot splash screen
@@ -212,7 +212,7 @@ def run_installation_steps():
         total_steps,
         "Setting boot splash screen..."
     )
-    sleep(15)
+    sleep(8)
     step += 1
 
     # Step 8: Configure interfaces (i2c, spi, vnc, etc.)
@@ -224,7 +224,7 @@ def run_installation_steps():
         total_steps,
         "Configuring interfaces..."
     )
-    sleep(15)
+    sleep(7)
     step += 1
 
     # Step 9: Install Mosquitto
@@ -245,7 +245,7 @@ def run_installation_steps():
         total_steps,
         "Setting Mosquitto password..."
     )
-    sleep(5)
+    sleep(7)
 
     # Update mosquitto.conf file
     mosquitto_config = (
