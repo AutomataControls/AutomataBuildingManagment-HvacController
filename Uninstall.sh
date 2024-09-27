@@ -105,18 +105,26 @@ else
     echo "Error: $UNINSTALL_GUI_SCRIPT not found. Uninstallation will proceed without GUI."
 fi
 
-# Make uninstall_progress_gui.py executable and run it
+# Step 12: Ensure uninstall_progress_gui.py has correct permissions and is executable
 if [ -f "/home/Automata/uninstall_progress_gui.py" ]; then
+    log "Ensuring uninstall_progress_gui.py has correct permissions..."
     chmod +x /home/Automata/uninstall_progress_gui.py
-    log "Uninstall Progress GUI script is now executable"
-    
-    # Execute the Uninstall Progress GUI script
+    chown Automata:Automata /home/Automata/uninstall_progress_gui.py
+    log "Permissions set for uninstall_progress_gui.py"
+else
+    log "uninstall_progress_gui.py not found in /home/Automata. Cannot set permissions."
+fi
+
+# Step 13: Launch the Uninstall Progress GUI
+if [ -f "/home/Automata/uninstall_progress_gui.py" ]; then
     log "Launching the Uninstall Progress GUI..."
     python3 /home/Automata/uninstall_progress_gui.py &
+    log "Uninstall Progress GUI launched successfully."
 else
     log "Uninstall Progress GUI script not found in /home/Automata."
     echo "Error: /home/Automata/uninstall_progress_gui.py not found. Uninstallation will proceed without GUI."
 fi
 
 log "Uninstallation process completed."
+
 
