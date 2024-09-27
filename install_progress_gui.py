@@ -60,55 +60,51 @@ def run_shell_command(command, step, total_steps, message):
 def create_desktop_icon():
     desktop_file = "/home/Automata/Desktop/update_sequent_boards.desktop"
     icon_script = "/home/Automata/AutomataBuildingManagment-HvacController/update_sequent_boards.sh"
-    icon_image = "/home/Automata/splash.png"  # Path to splash.png
-    icon_content = f"""
-    [Desktop Entry]
-    Name=Update Sequent Boards
-    Comment=Run the Sequent Board Update Script
-    Exec=bash {icon_script}
-    Icon={icon_image}
-    Terminal=true
-    Type=Application
-    Categories=Utility;
-    """
+    icon_image = "/home/Automata/splash.png"
+    icon_content = f\"""[Desktop Entry]
+Name=Update Sequent Boards
+Comment=Run the Sequent Board Update Script
+Exec=bash {icon_script}
+Icon={icon_image}
+Terminal=true
+Type=Application
+Categories=Utility;\"""
 
     # Write the .desktop file
     with open(desktop_file, "w") as f:
         f.write(icon_content)
-    
+
     # Set executable permissions for the .desktop file
     subprocess.run(f"chmod +x {desktop_file}", shell=True)
-    
+
     # Set ownership to Automata user
     subprocess.run(f"chown Automata:Automata {desktop_file}", shell=True)
-    
+
     print("Desktop icon for updating Sequent boards created successfully!")
 
 # Function to create a Node-RED desktop icon
 def create_node_red_icon():
     desktop_file = "/home/Automata/Desktop/OpenNodeRedUI.desktop"
     icon_image = "/home/Automata/AutomataBuildingManagment-HvacController/NodeRedLogo.png"
-    icon_content = f"""
-    [Desktop Entry]
-    Name=Open Node-RED
-    Comment=Open Node-RED UI and Dashboard
-    Exec=xdg-open http://127.0.0.1:1880/ && xdg-open http://127.0.0.1:1880/ui
-    Icon={icon_image}
-    Terminal=false
-    Type=Application
-    Categories=Utility;
-    """
+    icon_content = f\"""[Desktop Entry]
+Name=Open Node-RED
+Comment=Open Node-RED UI and Dashboard
+Exec=xdg-open http://127.0.0.1:1880/ && xdg-open http://127.0.0.1:1880/ui
+Icon={icon_image}
+Terminal=false
+Type=Application
+Categories=Utility;\"""
 
     # Write the .desktop file
     with open(desktop_file, "w") as f:
         f.write(icon_content)
-    
+
     # Set executable permissions for the .desktop file
     subprocess.run(f"chmod +x {desktop_file}", shell=True)
-    
+
     # Set ownership to Automata user
     subprocess.run(f"chown Automata:Automata {desktop_file}", shell=True)
-    
+
     print("Desktop icon for Node-RED created successfully!")
 
 # Function to install Node-RED palette nodes
@@ -118,7 +114,7 @@ def install_palette_node(node, step, total_steps):
 
 # Run all installation steps in order
 def run_installation_steps():
-    total_steps = 36  # Adjusted total steps
+    total_steps = 39
     step = 1
 
     # Step 1: Copy splash.png from the repo directory to /home/Automata
@@ -273,3 +269,4 @@ threading.Thread(target=spin_animation, daemon=True).start()
 
 # Tkinter main loop to keep the GUI running
 root.mainloop()
+
