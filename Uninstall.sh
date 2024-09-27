@@ -29,7 +29,7 @@ LOGFILE="/home/Automata/uninstall_log.txt"
 log "Uninstallation started"
 
 # Step 3: Copy and set up the uninstall GUI Python script
-UNINSTALL_GUI="/home/Automata/uninstall_progress_gui.py"
+UNINSTALL_GUI="/home/Automata//AutomataBuildingManagment-HvacController/uninstall_progress_gui.py"
 
 # Make sure the uninstall_progress_gui.py file exists
 if [ ! -f "$UNINSTALL_GUI" ]; then
