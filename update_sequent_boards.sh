@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # Create Python GUI for board update progress
@@ -136,7 +135,7 @@ WantedBy=multi-user.target
 [Desktop Entry]
 Name=Open Node-RED UI
 Comment=Launch Node-RED interface
-Exec=chromium-browser --new-window http://127.0.0.1:1880/ http://127.0.0.1:1880/ui
+Exec=/home/Automata/open_node_red.sh
 Icon=/home/Automata/AutomataBuildingManagment-HvacController/NodeRedLogo.png
 Terminal=false
 Type=Application
@@ -150,7 +149,22 @@ Categories=Utility;
     sleep(2)
     step += 1
 
-    # Step 13: Final step - prompt for reboot
+    # Step 13: Create shell script to open Node-RED UI pages
+    update_progress(step, total_steps, "Creating shell script to open Node-RED UI pages...")
+    node_red_script_content = '''
+#!/bin/bash
+xdg-open http://127.0.0.1:1880/
+xdg-open http://127.0.0.1:1880/ui
+    '''
+    with open('/home/Automata/open_node_red.sh', 'w') as f:
+        f.write(node_red_script_content)
+
+    # Set permissions for the shell script
+    run_shell_command("chmod +x /home/Automata/open_node_red.sh", step, total_steps, "Setting permissions for Node-RED shell script")
+    sleep(2)
+    step += 1
+
+    # Step 14: Final step - prompt for reboot
     if success:
         update_progress(step, total_steps, "Board update succeeded. Please reboot.")
     else:
