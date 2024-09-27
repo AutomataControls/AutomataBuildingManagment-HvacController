@@ -85,9 +85,36 @@ def create_desktop_icon():
     
     print("Desktop icon for updating Sequent boards created successfully!")
 
+# Function to create a Node-RED desktop icon
+def create_node_red_icon():
+    desktop_file = "/home/Automata/Desktop/OpenNodeRedUI.desktop"
+    icon_image = "/home/Automata/AutomataBuildingManagment-HvacController/NodeRedLogo.png"
+    icon_content = f"""
+    [Desktop Entry]
+    Name=Open Node-RED
+    Comment=Open Node-RED UI and Dashboard
+    Exec=xdg-open http://127.0.0.1:1880/ && xdg-open http://127.0.0.1:1880/ui
+    Icon={icon_image}
+    Terminal=false
+    Type=Application
+    Categories=Utility;
+    """
+
+    # Write the .desktop file
+    with open(desktop_file, "w") as f:
+        f.write(icon_content)
+    
+    # Set executable permissions for the .desktop file
+    subprocess.run(f"chmod +x {desktop_file}", shell=True)
+    
+    # Set ownership to Automata user
+    subprocess.run(f"chown Automata:Automata {desktop_file}", shell=True)
+    
+    print("Desktop icon for Node-RED created successfully!")
+
 # Run all installation steps in order
 def run_installation_steps():
-    total_steps = 31  # Adjusted total steps
+    total_steps = 35  # Adjusted total steps
     step = 1
 
     # Step 1: Copy splash.png from the repo directory to /home/Automata
@@ -126,7 +153,12 @@ def run_installation_steps():
         sleep(3.5)
         step += 1
 
-    # Step 7: Install Sequent Microsystems drivers
+    # Step 7: Ensure npm is installed
+    run_shell_command("sudo apt-get update && sudo apt-get install -y npm", step, total_steps, "Installing npm package manager...")
+    sleep(5)
+    step += 1
+
+    # Step 8: Install Sequent Microsystems drivers
     boards = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi", "8relind-rpi"]
     for board in boards:
         board_path = f"/home/Automata/AutomataBuildingManagment-HvacController/{board}"
@@ -139,26 +171,50 @@ def run_installation_steps():
             step += 1
         sleep(5)
 
-    # Step 8: Install Node-RED theme package and fix the missing theme issue
+    # Step 9: Install Node-RED theme package and fix the missing theme issue
     run_shell_command("mkdir -p /home/Automata/.node-red/node_modules/@node-red-contrib-themes/theme-collection/themes", step, total_steps, "Creating theme collection directory...")
     run_shell_command("cd /home/Automata/.node-red && npm install @node-red-contrib-themes/theme-collection", step, total_steps, "Installing Node-RED theme package... This might take a while.")
     sleep(5)
     step += 1
 
-    # Step 9: Install Node-RED
+    # Step 10: Install Node-RED
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", step, total_steps, "Installing Node-RED... This could take some time.")
     update_progress(step, total_steps, "Node-RED Security Measures initiated...")
     sleep(5)
     
     # Reflect Node-RED security setup
     update_progress(step, total_steps, "Setting up Node-RED security...")
-    sleep(2)  # Simulate security setup time
-    update_progress(step, total_steps, "Node-RED User and Password Security & VPN setup Successful!\n Welcome Automata.")
+    sleep(2)
     step += 1
 
-    # Step 10: Create a desktop icon for updating Sequent boards using splash.png as the icon
-    update_progress(step, total_steps, "Creating desktop icon for Sequent board updates...")
-    create_desktop_icon()
+    # Step 11: Enable VNC
+    run_shell_command("sudo raspi-config nonint do_vnc 0", step, total_steps, "Enabling VNC...")
+    sleep(3)
+    step += 1
+
+    # Step 12: Enable I2C
+    run_shell_command("sudo raspi-config nonint do_i2c 0", step, total_steps, "Enabling I2C...")
+    sleep(3)
+    step += 1
+
+    # Step 13: Enable SPI
+    run_shell_command("sudo raspi-config nonint do_spi 0", step, total_steps, "Enabling SPI...")
+    sleep(3)
+    step += 1
+
+    # Step 14: Enable 1-Wire
+    run_shell_command("sudo raspi-config nonint do_onewire 0", step, total_steps, "Enabling 1-Wire...")
+    sleep(3)
+    step += 1
+
+    # Step 15: Disable screen blanking
+    run_shell_command("sudo raspi-config nonint do_blanking 1", step, total_steps, "Disabling screen blanking...")
+    sleep(3)
+    step += 1
+
+    # Step 16: Create a Node-RED desktop icon
+    update_progress(step, total_steps, "Creating desktop icon for Node-RED...")
+    create_node_red_icon()
     step += 1
 
     # Final Step: Installation complete
