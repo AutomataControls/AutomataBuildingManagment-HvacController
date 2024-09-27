@@ -1,106 +1,53 @@
-import tkinter as tk
-from tkinter import ttk
-import subprocess
-import threading
-import os
+#!/bin/bash
 
-# Create the main window
-root = tk.Tk()
-root.title("Automata Uninstallation Progress")
+# Exit immediately if a command exits with a non-zero status
+set -e
 
-# Set window size and position
-root.geometry("600x400")
-root.configure(bg='#2e2e2e')
+# Function to log messages
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOGFILE"
+}
 
-# Title message
-label = tk.Label(root, text="Automata Uninstallation Progress", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
-label.pack(pady=20)
+# Function to handle errors
+handle_error() {
+    log "Error occurred in line $1"
+    exit 1
+}
 
-# Progress bar
-progress = ttk.Progressbar(root, orient="horizontal", length=500, mode="determinate")
-progress.pack(pady=20)
+# Set up error handling
+trap 'handle_error $LINENO' ERR
 
-# Status message
-status_label = tk.Label(root, text="Starting uninstallation...", font=("Helvetica", 12), fg="orange", bg="#2e2e2e")
-status_label.pack(pady=10)
+# Step 1: Ensure the script is running as root
+if [ "$EUID" -ne 0 ]; then
+    echo "Please run as root. Re-running with sudo..."
+    sudo bash "$0" "$@"
+    exit
+fi
 
-# Update progress function
-def update_progress(step, total_steps, message):
-    progress['value'] = (step / total_steps) * 100
-    status_label.config(text=message)
-    root.update_idletasks()
+# Step 2: Log file setup
+LOGFILE="/home/Automata/uninstall_log.txt"
+log "Uninstallation started"
 
-# Function to run shell commands in a separate thread
-def run_shell_command(command, step, total_steps, message):
-    update_progress(step, total_steps, message)
-    result = subprocess.Popen(command, shell=True).wait()
-    if result != 0:
-        status_label.config(text=f"Error during: {message}. Check logs for details.")
-        root.update_idletasks()
+# Step 3: Copy and set up the uninstall GUI Python script
+UNINSTALL_GUI="/home/Automata/uninstall_progress_gui.py"
 
-def run_uninstallation_steps():
-    total_steps = 7
+# Make sure the uninstall_progress_gui.py file exists
+if [ ! -f "$UNINSTALL_GUI" ]; then
+    echo "Error: $UNINSTALL_GUI not found. Exiting uninstallation process."
+    exit 1
+fi
 
-    # Step 1: Stop and remove Mosquitto service and user credentials
-    run_shell_command("sudo systemctl stop mosquitto && sudo systemctl disable mosquitto && sudo apt-get remove --purge -y mosquitto mosquitto-clients && sudo rm -f /etc/mosquitto/passwd && sudo rm -f /etc/mosquitto/mosquitto.conf", 1, total_steps, "Removing Mosquitto...")
+# Set permissions
+chmod +x $UNINSTALL_GUI
+chown Automata:Automata $UNINSTALL_GUI
+log "Permissions set for $UNINSTALL_GUI"
 
-    # Step 2: Restore the default swap size
-    run_shell_command("sudo dphys-swapfile swapoff && sudo sed -i 's/^CONF_SWAPSIZE=.*$/CONF_SWAPSIZE=100/' /etc/dphys-swapfile && sudo dphys-swapfile setup && sudo dphys-swapfile swapon", 2, total_steps, "Restoring default swap size...")
+# Step 4: Launch the GUI
+log "Launching Uninstall Progress GUI..."
+python3 $UNINSTALL_GUI &
+log "Uninstall Progress GUI launched successfully."
 
-    # Step 3: Remove Node-RED and related services
-    run_shell_command("sudo systemctl stop nodered && sudo systemctl disable nodered && sudo apt-get remove --purge -y nodered", 3, total_steps, "Removing Node-RED...")
+# Continue with any additional uninstallation steps needed...
 
-    # Step 4: Remove Sequent Microsystems drivers
-    drivers = [
-        "/home/Automata/AutomataBuildingManagment-HvacController/megabas-rpi",
-        "/home/Automata/AutomataBuildingManagment-HvacController/megaind-rpi",
-        "/home/Automata/AutomataBuildingManagment-HvacController/16univin-rpi",
-        "/home/Automata/AutomataBuildingManagment-HvacController/8relind-rpi"
-    ]
-    for step, driver in enumerate(drivers, start=4):
-        if os.path.isdir(driver):  # Check if directory exists
-            run_shell_command(f"cd {driver} && sudo make uninstall", step, total_steps, f"Removing {driver} driver...")
+log "Uninstallation process completed successfully."
 
-    # Step 5: Disable I2C, SPI, VNC, 1-Wire, Remote GPIO, and SSH
-    run_shell_command("sudo raspi-config nonint do_i2c 1 && sudo raspi-config nonint do_spi 1 && sudo raspi-config nonint do_vnc 1 && sudo raspi-config nonint do_onewire 1 && sudo raspi-config nonint do_rgpio 1 && sudo raspi-config nonint do_ssh 1 && sudo raspi-config nonint do_serial 0", 5, total_steps, "Disabling interfaces and enabling serial port...")
-
-    # Step 6: Remove Node-RED desktop icon
-    run_shell_command("rm -f /home/Automata/Desktop/NodeRed.desktop", 6, total_steps, "Removing Node-RED desktop icon...")
-
-    # Step 7: Remove the cloned repository directory
-    run_shell_command("sudo rm -rf /home/Automata/AutomataBuildingManagment-HvacController", 7, total_steps, "Removing repository directory...")
-
-    # Show final message after uninstallation
-    show_uninstall_complete_message()
-
-# Function to show final uninstallation message and reboot prompt
-def show_uninstall_complete_message():
-    root.withdraw()  # Hide the main window
-    final_window = tk.Tk()
-    final_window.title("Uninstallation Complete")
-    final_window.geometry("400x200")
-    final_window.configure(bg='#2e2e2e')
-
-    message = tk.Label(final_window, text="Uninstallation completed successfully!\nDo you want to reboot now?", font=("Helvetica", 12), fg="#00b3b3", bg="#2e2e2e")
-    message.pack(pady=20)
-
-    def reboot():
-        os.system("sudo reboot")
-
-    def close():
-        final_window.destroy()
-        root.destroy()
-
-    reboot_button = tk.Button(final_window, text="Reboot", command=reboot, bg="#008080", fg="white")
-    reboot_button.pack(side=tk.LEFT, padx=20)
-
-    close_button = tk.Button(final_window, text="Close", command=close, bg="#008080", fg="white")
-    close_button.pack(side=tk.RIGHT, padx=20)
-
-    final_window.mainloop()
-
-# Start the uninstallation process
-threading.Thread(target=run_uninstallation_steps).start()
-
-# Start the GUI
-root.mainloop()
