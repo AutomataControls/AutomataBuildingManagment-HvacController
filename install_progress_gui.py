@@ -1,4 +1,3 @@
-
 import tkinter as tk
 from tkinter import ttk
 import subprocess
@@ -112,9 +111,14 @@ def create_node_red_icon():
     
     print("Desktop icon for Node-RED created successfully!")
 
+# Function to install Node-RED palette nodes
+def install_palette_node(node, step, total_steps):
+    run_shell_command(f"cd /home/Automata/.node-red && npm install {node}", step, total_steps, f"Installing {node} palette node...")
+    sleep(3)
+
 # Run all installation steps in order
 def run_installation_steps():
-    total_steps = 35  # Adjusted total steps
+    total_steps = 36  # Adjusted total steps
     step = 1
 
     # Step 1: Copy splash.png from the repo directory to /home/Automata
@@ -153,12 +157,7 @@ def run_installation_steps():
         sleep(3.5)
         step += 1
 
-    # Step 7: Ensure npm is installed
-    run_shell_command("sudo apt-get update && sudo apt-get install -y npm", step, total_steps, "Installing npm package manager...")
-    sleep(5)
-    step += 1
-
-    # Step 8: Install Sequent Microsystems drivers
+    # Step 7: Install Sequent Microsystems drivers
     boards = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi", "8relind-rpi"]
     for board in boards:
         board_path = f"/home/Automata/AutomataBuildingManagment-HvacController/{board}"
@@ -171,48 +170,68 @@ def run_installation_steps():
             step += 1
         sleep(5)
 
-    # Step 9: Install Node-RED theme package and fix the missing theme issue
+    # Step 8: Install Node-RED theme package and fix the missing theme issue
     run_shell_command("mkdir -p /home/Automata/.node-red/node_modules/@node-red-contrib-themes/theme-collection/themes", step, total_steps, "Creating theme collection directory...")
-    run_shell_command("cd /home/Automata/.node-red && npm install @node-red-contrib-themes/theme-collection", step, total_steps, "Installing Node-RED theme package... This might take a while.")
-    sleep(5)
     step += 1
 
-    # Step 10: Install Node-RED
+    # Step 9: Install Node-RED
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", step, total_steps, "Installing Node-RED... This could take some time.")
     update_progress(step, total_steps, "Node-RED Security Measures initiated...")
     sleep(5)
-    
-    # Reflect Node-RED security setup
-    update_progress(step, total_steps, "Setting up Node-RED security...")
-    sleep(2)
     step += 1
 
-    # Step 11: Enable VNC
+    # Step 10: Install Node-RED palette nodes
+    palette_nodes = [
+        "node-red-contrib-ui-led",
+        "node-red-dashboard",
+        "node-red-contrib-sm-16inpind",
+        "node-red-contrib-sm-16relind",
+        "node-red-contrib-sm-8inputs",
+        "node-red-contrib-sm-8relind",
+        "node-red-contrib-sm-bas",
+        "node-red-contrib-sm-ind",
+        "node-red-node-openweathermap",
+        "node-red-contrib-influxdb",
+        "node-red-node-email",
+        "node-red-contrib-boolean-logic-ultimate",
+        "node-red-contrib-cpu",
+        "node-red-contrib-bme280-rpi",
+        "node-red-contrib-bme280",
+        "node-red-node-aws33",
+        "@node-red-contrib-themes/theme-collection"  # Added theme collection
+    ]
+
+    # Step 11: Loop through and install each palette node
+    for node in palette_nodes:
+        install_palette_node(node, step, total_steps)
+        step += 1
+
+    # Step 12: Enable VNC
     run_shell_command("sudo raspi-config nonint do_vnc 0", step, total_steps, "Enabling VNC...")
     sleep(3)
     step += 1
 
-    # Step 12: Enable I2C
+    # Step 13: Enable I2C
     run_shell_command("sudo raspi-config nonint do_i2c 0", step, total_steps, "Enabling I2C...")
     sleep(3)
     step += 1
 
-    # Step 13: Enable SPI
+    # Step 14: Enable SPI
     run_shell_command("sudo raspi-config nonint do_spi 0", step, total_steps, "Enabling SPI...")
     sleep(3)
     step += 1
 
-    # Step 14: Enable 1-Wire
+    # Step 15: Enable 1-Wire
     run_shell_command("sudo raspi-config nonint do_onewire 0", step, total_steps, "Enabling 1-Wire...")
     sleep(3)
     step += 1
 
-    # Step 15: Disable screen blanking
+    # Step 16: Disable screen blanking
     run_shell_command("sudo raspi-config nonint do_blanking 1", step, total_steps, "Disabling screen blanking...")
     sleep(3)
     step += 1
 
-    # Step 16: Create a Node-RED desktop icon
+    # Step 17: Create a Node-RED desktop icon
     update_progress(step, total_steps, "Creating desktop icon for Node-RED...")
     create_node_red_icon()
     step += 1
@@ -254,4 +273,3 @@ threading.Thread(target=spin_animation, daemon=True).start()
 
 # Tkinter main loop to keep the GUI running
 root.mainloop()
-
