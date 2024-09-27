@@ -123,13 +123,13 @@ def run_installation_steps():
 
     # Step 1: Copy splash.png from the repo directory to /home/Automata
     run_shell_command("cp /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/", step, total_steps, "Copying splash.png to /home/Automata...")
-    sleep(2)
+    sleep(3)
     step += 1
 
     # Step 2: Navigate to /usr/share/plymouth/themes/pix/, move the original splash.png and copy the new one
     run_shell_command("cd /usr/share/plymouth/themes/pix/ && sudo mv splash.png splash.png.bk", step, total_steps, "Backing up original splash.png...")
     run_shell_command("sudo cp /home/Automata/splash.png /usr/share/plymouth/themes/pix/", step, total_steps, "Copying Automata splash.png to Plymouth theme...")
-    sleep(2)
+    sleep(3)
     step += 1
     update_progress(step, total_steps, "Splash logo move successful!")
 
@@ -139,9 +139,9 @@ def run_installation_steps():
     step += 1
 
     # Step 4: Create LXDE wallpaper config file with "Fill" mode
-    run_shell_command("mkdir -p /home/Automata/.config/pcmanfm/LXDE-pi", step, total_steps, "Creating LXDE config directory...")
+    run_shell_command("sudo mkdir -p /home/Automata/.config/pcmanfm/LXDE-pi", step, total_steps, "Creating LXDE config directory...")
     run_shell_command("cat <<EOL > /home/Automata/.config/pcmanfm/LXDE-pi/desktop-items-0.conf\n[*]\nwallpaper=/home/Automata/splash.png\nwallpaper_mode=stretch\nEOL", step, total_steps, "Setting wallpaper to Fill mode in LXDE config...")
-    sleep(2)
+    sleep(5)
     step += 1
 
     # Step 5: Increase swap size
@@ -154,7 +154,7 @@ def run_installation_steps():
     for board in boards_to_clone:
         run_shell_command(f"git clone https://github.com/sequentmicrosystems/{board}.git /home/Automata/AutomataBuildingManagment-HvacController/{board}", step, total_steps, f"Cloning {board}...")
         update_progress(step, total_steps, f"Cloning {board}... This might take a while.")
-        sleep(3.5)
+        sleep(4)
         step += 1
 
     # Step 7: Install Sequent Microsystems drivers
@@ -163,7 +163,7 @@ def run_installation_steps():
         board_path = f"/home/Automata/AutomataBuildingManagment-HvacController/{board}"
         if os.path.isdir(board_path):
             run_shell_command(f"cd {board_path} && sudo make install", step, total_steps, f"Installing {board} driver... This could take some time.")
-            update_progress(step, total_steps, f"Installing {board} driver successfully!")
+            update_progress(step, total_steps, f"Installed {board} driver successfully!")
             step += 1
         else:
             update_progress(step, total_steps, f"Board {board} not found, skipping...")
@@ -208,27 +208,27 @@ def run_installation_steps():
 
     # Step 12: Enable VNC
     run_shell_command("sudo raspi-config nonint do_vnc 0", step, total_steps, "Enabling VNC...")
-    sleep(3)
+    sleep(5)
     step += 1
 
     # Step 13: Enable I2C
     run_shell_command("sudo raspi-config nonint do_i2c 0", step, total_steps, "Enabling I2C...")
-    sleep(3)
+    sleep(5)
     step += 1
 
     # Step 14: Enable SPI
     run_shell_command("sudo raspi-config nonint do_spi 0", step, total_steps, "Enabling SPI...")
-    sleep(3)
+    sleep(5)
     step += 1
 
     # Step 15: Enable 1-Wire
     run_shell_command("sudo raspi-config nonint do_onewire 0", step, total_steps, "Enabling 1-Wire...")
-    sleep(3)
+    sleep(5)
     step += 1
 
     # Step 16: Disable screen blanking
     run_shell_command("sudo raspi-config nonint do_blanking 1", step, total_steps, "Disabling screen blanking...")
-    sleep(3)
+    sleep(5)
     step += 1
 
     # Step 17: Create a Node-RED desktop icon
