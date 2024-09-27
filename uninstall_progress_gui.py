@@ -117,39 +117,7 @@ def run_uninstallation_steps():
 def show_uninstall_complete_message():
     root.withdraw()  # Hide the main window
     final_window = tk.Tk()
-    final_window.title("Uninstallation Complete")
-    final_window.geometry("600x400")
-    final_window.configure(bg='#2e2e2e')
+    final_wi
 
-    final_label = tk.Label(final_window, text="Automata BMS Uninstallation Complete", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
-    final_label.pack(pady=20)
-
-    final_message = tk.Label(final_window, text="Uninstallation Successful,Pleae Reboot for changes to take effect.\nWould you like to reboot the system now?", font=("Helvetica", 14), fg="orange", bg="#2e2e2e")
-    final_message.pack(pady=20)
-
-    # Reboot and Exit buttons
-    button_frame = tk.Frame(final_window, bg='#2e2e2e')
-    button_frame.pack(pady=20)
-
-    reboot_button = tk.Button(button_frame, text="Yes", font=("Helvetica", 12), command=lambda: subprocess.Popen('sudo reboot', shell=True), bg='#00b3b3', fg="black", width=10)
-    reboot_button.grid(row=0, column=0, padx=10)
-
-    exit_button = tk.Button(button_frame, text="No", font=("Helvetica", 12), command=final_window.destroy, bg='orange', fg="black", width=10)
-    exit_button.grid(row=0, column=1, padx=10)
-
-    final_window.mainloop()
-
-# Run uninstallation steps in a separate thread to keep GUI responsive
-threading.Thread(target=run_uninstallation_steps).start()
-
-# Tkinter loop runs in the background while uninstallation runs
-root.mainloop()
-EOF
-
-# Ensure the Python script has execute permissions
-chmod +x $UNINSTALL_GUI
-
-# Run the Python GUI script
-python3 $UNINSTALL_GUI
 
 
