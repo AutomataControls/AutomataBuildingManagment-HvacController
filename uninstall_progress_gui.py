@@ -117,7 +117,38 @@ def run_uninstallation_steps():
 def show_uninstall_complete_message():
     root.withdraw()  # Hide the main window
     final_window = tk.Tk()
-    final_wi
+    final_window.title("Uninstallation Complete")
+    final_window.geometry("400x200")
+    final_window.configure(bg='#2e2e2e')
 
+    message = tk.Label(final_window, text="Uninstallation completed successfully!\nDo you want to reboot now?", font=("Helvetica", 12), fg="#00b3b3", bg="#2e2e2e")
+    message.pack(pady=20)
 
+    def reboot():
+        os.system("sudo reboot")
 
+    def close():
+        final_window.destroy()
+        root.destroy()
+
+    reboot_button = tk.Button(final_window, text="Reboot", command=reboot, bg="#008080", fg="white")
+    reboot_button.pack(side=tk.LEFT, padx=20)
+
+    close_button = tk.Button(final_window, text="Close", command=close, bg="#008080", fg="white")
+    close_button.pack(side=tk.RIGHT, padx=20)
+
+    final_window.mainloop()
+
+# Start the uninstallation process
+threading.Thread(target=run_uninstallation_steps).start()
+
+# Start the GUI
+root.mainloop()
+EOF
+
+# Continue with the rest of your uninstallation script...
+log "GUI setup complete. Continuing with uninstallation..."
+
+# Add your uninstallation steps here...
+
+log "Uninstallation completed successfully"
