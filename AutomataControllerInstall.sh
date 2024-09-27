@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 # Exit immediately if a command exits with a non-zero status
 set -e
@@ -51,6 +51,7 @@ fi
 
 # Immediately set permissions after cloning for redundancy
 log "Setting permissions for files in repository..."
+chown -R Automata:Automata "$REPO_DIR"
 find "$REPO_DIR" -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} \; 2>> "$LOGFILE"
 find "$REPO_DIR" -type f -name "*.png" -exec chmod +r {} \; 2>> "$LOGFILE"
 chown -R Automata:Automata "$REPO_DIR"
@@ -61,11 +62,7 @@ cp "$REPO_DIR/install_progress_gui.py" /home/Automata/install_progress_gui.py
 chmod +x /home/Automata/install_progress_gui.py
 chown Automata:Automata /home/Automata/install_progress_gui.py
 
-# Step 6: Run the installation progress GUI
-log "Running installation GUI..."
-sudo -u Automata DISPLAY=:0 python3 /home/Automata/install_progress_gui.py &
-
-# Step 7: Kill lingering services before continuing
+# Step 6: Kill lingering services before continuing
 log "Killing lingering services (Node-RED, Mosquitto)..."
 services=('nodered' 'mosquitto')
 for service in "${services[@]}"; do
@@ -74,6 +71,10 @@ for service in "${services[@]}"; do
         systemctl stop "$service"
     fi
 done
+
+# Step 7: Run the installation progress GUI
+log "Running installation GUI..."
+sudo -u Automata DISPLAY=:0 python3 /home/Automata/install_progress_gui.py &
 
 # Step 8: Set permissions for repository and Automata files after reboot
 log "Setting permissions for files in repository (redundant step after cloning)..."
