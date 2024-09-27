@@ -1,43 +1,3 @@
-#!/bin/bash
-
-# Exit immediately if a command exits with a non-zero status
-set -e
-
-# Function to log messages
-log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOGFILE"
-}
-
-# Function to handle errors
-handle_error() {
-    log "Error occurred in line $1"
-    exit 1
-}
-
-# Set up error handling
-trap 'handle_error $LINENO' ERR
-
-# Function to run shell commands and log their execution
-run_shell_command() {
-    local command="$1"
-    eval "$command"
-}
-
-# Step 1: Ensure the script is running as root
-if [ "$EUID" -ne 0 ]; then
-    echo "Please run as root. Re-running with sudo..."
-    sudo bash "$0" "$@"
-    exit
-fi
-
-# Step 2: Log file setup
-LOGFILE="/home/Automata/uninstall_log.txt"
-log "Uninstallation started"
-
-# Step 3: Set up the Tkinter GUI for uninstallation progress
-log "Setting up GUI for uninstallation progress..."
-UNINSTALL_GUI="/home/Automata/uninstall_gui.py"
-cat << 'EOF' > $UNINSTALL_GUI
 import tkinter as tk
 from tkinter import ttk
 import subprocess
@@ -144,11 +104,3 @@ threading.Thread(target=run_uninstallation_steps).start()
 
 # Start the GUI
 root.mainloop()
-EOF
-
-# Continue with the rest of your uninstallation script...
-log "GUI setup complete. Continuing with uninstallation..."
-
-# Add your uninstallation steps here...
-
-log "Uninstallation completed successfully"
