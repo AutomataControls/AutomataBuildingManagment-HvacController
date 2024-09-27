@@ -60,15 +60,15 @@ def run_shell_command(command, step, total_steps, message):
 def create_desktop_icon():
     desktop_file = "/home/Automata/Desktop/update_sequent_boards.desktop"
     icon_script = "/home/Automata/AutomataBuildingManagment-HvacController/update_sequent_boards.sh"
-    icon_image = "/home/Automata/splash.png"
-    icon_content = f\"""[Desktop Entry]
+    icon_image = "/home/Automata/AutomataBuildingManagment-HvacController/splash.png"
+    icon_content = f"""[Desktop Entry]
 Name=Update Sequent Boards
 Comment=Run the Sequent Board Update Script
 Exec=bash {icon_script}
 Icon={icon_image}
 Terminal=true
 Type=Application
-Categories=Utility;\"""
+Categories=Utility;"""
 
     # Write the .desktop file
     with open(desktop_file, "w") as f:
@@ -86,14 +86,14 @@ Categories=Utility;\"""
 def create_node_red_icon():
     desktop_file = "/home/Automata/Desktop/OpenNodeRedUI.desktop"
     icon_image = "/home/Automata/AutomataBuildingManagment-HvacController/NodeRedLogo.png"
-    icon_content = f\"""[Desktop Entry]
+    icon_content = f"""[Desktop Entry]
 Name=Open Node-RED
 Comment=Open Node-RED UI and Dashboard
 Exec=xdg-open http://127.0.0.1:1880/ && xdg-open http://127.0.0.1:1880/ui
 Icon={icon_image}
 Terminal=false
 Type=Application
-Categories=Utility;\"""
+Categories=Utility;"""
 
     # Write the .desktop file
     with open(desktop_file, "w") as f:
@@ -114,7 +114,7 @@ def install_palette_node(node, step, total_steps):
 
 # Run all installation steps in order
 def run_installation_steps():
-    total_steps = 39
+    total_steps = 39  # Adjusted to match the total number of steps
     step = 1
 
     # Step 1: Copy splash.png from the repo directory to /home/Automata
@@ -127,7 +127,6 @@ def run_installation_steps():
     run_shell_command("sudo cp /home/Automata/splash.png /usr/share/plymouth/themes/pix/", step, total_steps, "Copying Automata splash.png to Plymouth theme...")
     sleep(3)
     step += 1
-    update_progress(step, total_steps, "Splash logo move successful!")
 
     # Step 3: Overclock the Raspberry Pi
     run_shell_command("echo -e 'over_voltage=2\narm_freq=1750' | sudo tee -a /boot/config.txt", step, total_steps, "Overclocking CPU...Turbo mode engaged!")
@@ -170,37 +169,23 @@ def run_installation_steps():
     run_shell_command("mkdir -p /home/Automata/.node-red/node_modules/@node-red-contrib-themes/theme-collection/themes", step, total_steps, "Creating theme collection directory...")
     step += 1
 
-    # Step 9: Install Node-RED
+    # Step 9: Install Mosquitto and configure
+    run_shell_command("sudo apt-get install -y mosquitto mosquitto-clients", step, total_steps, "Installing Mosquitto...")
+    run_shell_command("sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2", step, total_steps, "Setting Mosquitto password for user Automata...")
+    step += 1
+
+    # Step 10: Configure Mosquitto settings
+    run_shell_command("echo 'listener 1883' | sudo tee -a /etc/mosquitto/mosquitto.conf", step, total_steps, "Configuring Mosquitto listener...")
+    run_shell_command("echo 'allow_anonymous false' | sudo tee -a /etc/mosquitto/mosquitto.conf", step, total_steps, "Disabling anonymous access...")
+    run_shell_command("echo 'password_file /etc/mosquitto/passwd' | sudo tee -a /etc/mosquitto/mosquitto.conf", step, total_steps, "Adding password file to Mosquitto config...")
+    run_shell_command("sudo systemctl restart mosquitto", step, total_steps, "Restarting Mosquitto service...")
+    step += 1
+
+    # Step 11: Install Node-RED
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", step, total_steps, "Installing Node-RED... This could take some time.")
     update_progress(step, total_steps, "Node-RED Security Measures initiated...")
     sleep(5)
     step += 1
-
-    # Step 10: Install Node-RED palette nodes
-    palette_nodes = [
-        "node-red-contrib-ui-led",
-        "node-red-dashboard",
-        "node-red-contrib-sm-16inpind",
-        "node-red-contrib-sm-16relind",
-        "node-red-contrib-sm-8inputs",
-        "node-red-contrib-sm-8relind",
-        "node-red-contrib-sm-bas",
-        "node-red-contrib-sm-ind",
-        "node-red-node-openweathermap",
-        "node-red-contrib-influxdb",
-        "node-red-node-email",
-        "node-red-contrib-boolean-logic-ultimate",
-        "node-red-contrib-cpu",
-        "node-red-contrib-bme280-rpi",
-        "node-red-contrib-bme280",
-        "node-red-node-aws33",
-        "@node-red-contrib-themes/theme-collection"  # Added theme collection
-    ]
-
-    # Step 11: Loop through and install each palette node
-    for node in palette_nodes:
-        install_palette_node(node, step, total_steps)
-        step += 1
 
     # Step 12: Enable VNC
     run_shell_command("sudo raspi-config nonint do_vnc 0", step, total_steps, "Enabling VNC...")
@@ -227,7 +212,7 @@ def run_installation_steps():
     sleep(5)
     step += 1
 
-    # Step 17: Create a Node-RED desktop icon
+    # Step 17: Create Node-RED desktop icon
     update_progress(step, total_steps, "Creating desktop icon for Node-RED...")
     create_node_red_icon()
     step += 1
@@ -269,4 +254,3 @@ threading.Thread(target=spin_animation, daemon=True).start()
 
 # Tkinter main loop to keep the GUI running
 root.mainloop()
-
