@@ -1,39 +1,3 @@
-import tkinter as tk
-from tkinter import ttk
-import subprocess
-import threading
-import os
-from time import sleep
-
-def update_progress(step, total_steps, message):
-    progress['value'] = (step / total_steps) * 100
-    status_label.config(text=message)
-    root.update_idletasks()
-
-def run_shell_command(command, step, total_steps, message):
-    update_progress(step, total_steps, message)
-    result = subprocess.run(command, shell=True, text=True, capture_output=True)
-    if result.returncode != 0:
-        print(f"Error during {message}: {result.stderr}")
-    else:
-        print(f"{message} completed successfully.")
-    return result
-
-def get_cpuid(board_path):
-    cpuid_file = os.path.join(board_path, "update", "cpuid")
-    try:
-        if os.path.exists(cpuid_file):
-            with open(cpuid_file, "r") as f:
-                cpuid = f.read().strip()
-            if cpuid:
-                return cpuid
-            else:
-                return "CPU ID not found"
-        else:
-            return "CPU ID file missing"
-    except Exception as e:
-        return f"Error retrieving CPU ID: {str(e)}"
-
 def run_update_steps():
     total_steps = 14  # Adjusted total steps to include new steps
     success = False
@@ -83,15 +47,13 @@ def run_update_steps():
             print(f"Board update script {board_update_script} not found.")
             step += 1
 
-  
-
-    # Step 9: Set permissions for launch_chromium.py
+    # Step 8: Set permissions for launch_chromium.py
     update_progress(step, total_steps, "Setting ownership and permissions for launch_chromium.py...")
     run_shell_command("sudo chown Automata:Automata /home/Automata/launch_chromium.py && sudo chmod +x /home/Automata/launch_chromium.py", step, total_steps, "Setting ownership and permissions for launch_chromium.py")
     sleep(5)
     step += 1
 
-    # Step 10: Create a systemd service to launch Chromium at boot
+    # Step 9: Create a systemd service to launch Chromium at boot
     update_progress(step, total_steps, "Creating a systemd service for Chromium auto-launch...")
     chromium_service = '''
 [Unit]
@@ -110,15 +72,14 @@ WantedBy=multi-user.target
     with open('/home/Automata/chromium-launch.service', 'w') as f:
         f.write(chromium_service)
 
-      # Step 8: Re-enable services
-    update_progress(step, total_steps, "Re-enabling Node-RED and Chromium services...")
-    run_shell_command("sudo systemctl enable nodered.service chromium-launch.service", step, total_steps, "Re-enabling Node-RED and Chromium services")
+    # Move the file to the systemd directory with elevated permissions
+    run_shell_command("sudo mv /home/Automata/chromium-launch.service /etc/systemd/system/", step, total_steps, "Moving Chromium service to systemd directory")
     sleep(5)
     step += 1
-    
-      # Move the file to the systemd directory with elevated permissions
-    run_shell_command("sudo mv /home/Automata/chromium-launch.service /etc/systemd/system/", step, total_steps, "Moving Chromium service to systemd directory")
-    run_shell_command("sudo systemctl enable chromium-launch.service", step, total_steps, "Enabling Chromium auto-launch service")
+
+    # Step 10: Re-enable services
+    update_progress(step, total_steps, "Re-enabling Node-RED and Chromium services...")
+    run_shell_command("sudo systemctl enable nodered.service chromium-launch.service", step, total_steps, "Re-enabling Node-RED and Chromium services")
     sleep(5)
     step += 1
 
@@ -171,48 +132,3 @@ xdg-open http://127.0.0.1:1880/ui
         print("No boards were updated successfully.")
 
     show_reboot_prompt()
-
-def show_reboot_prompt():
-    root.withdraw()
-    final_window = tk.Tk()
-    final_window.title("Board Firmware Update Complete")
-    final_window.geometry("600x400")
-    final_window.configure(bg='#2e2e2e')
-
-    final_label = tk.Label(final_window, text="Board Firmware Update Complete", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
-    final_label.pack(pady=20)
-
-    final_message = tk.Label(final_window, text="Please reboot to finalize the firmware update.\n\nReboot now?", font=("Helvetica", 14), fg="orange", bg="#2e2e2e")
-    final_message.pack(pady=20)
-
-    button_frame = tk.Frame(final_window, bg='#2e2e2e')
-    button_frame.pack(pady=20)
-
-    reboot_button = tk.Button(button_frame, text="Yes", font=("Helvetica", 12), command=lambda: os.system('sudo reboot'), bg='#00b3b3', fg="black", width=10)
-    reboot_button.grid(row=0, column=0, padx=10)
-
-    exit_button = tk.Button(button_frame, text="No", font=("Helvetica", 12), command=final_window.destroy, bg='orange', fg="black", width=10)
-    exit_button.grid(row=0, column=1, padx=10)
-
-    final_window.mainloop()
-
-root = tk.Tk()
-root.title("Automata Board Updates")
-root.geometry("600x450")  # Increased height to accommodate footer
-root.configure(bg='#2e2e2e')
-
-label = tk.Label(root, text="Automata Board Updates", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
-label.pack(pady=20)
-
-progress = ttk.Progressbar(root, orient="horizontal", length=500, mode="determinate")
-progress.pack(pady=20)
-
-status_label = tk.Label(root, text="Starting updates...", font=("Helvetica", 12), fg="orange", bg="#2e2e2e")
-status_label.pack(pady=10)
-
-# Add footer
-footer = tk.Label(root, text="Developed by A. Jewell Sr, 2023", font=("Helvetica", 10, "bold"), fg="#00b3b3", bg="#2e2e2e")
-footer.pack(side="bottom", pady=10)
-
-threading.Thread(target=run_update_steps).start()
-root.mainloop()
