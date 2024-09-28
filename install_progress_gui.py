@@ -148,7 +148,7 @@ def run_installation_steps():
     boards_to_clone = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi", "8relind-rpi"]
     for board in boards_to_clone:
         run_shell_command(f"git clone https://github.com/sequentmicrosystems/{board}.git /home/Automata/AutomataBuildingManagment-HvacController/{board}", step, total_steps, f"Cloning {board}...")
-        update_progress(step, total_steps, f"Cloning {board}... This might take a while.")
+        update_progress(step, total_steps, f"Cloning of {board} Successfull.")
         sleep(4)
         step += 1
 
