@@ -29,16 +29,16 @@ if [ ! -f "$UNINSTALL_GUI" ]; then
 fi
 
 # Set permissions
-chmod +x $UNINSTALL_GUI
-chown Automata:Automata $UNINSTALL_GUI
+chmod +x "$UNINSTALL_GUI"
+chown Automata:Automata "$UNINSTALL_GUI"
 log "Permissions set for $UNINSTALL_GUI"
 
 # Step 4: Launch the GUI
 log "Launching Uninstall Progress GUI..."
-python3 $UNINSTALL_GUI &
+sudo -u Automata DISPLAY=:0 python3 "$UNINSTALL_GUI" &
 log "Uninstall Progress GUI launched successfully."
 
 # Continue with any additional uninstallation steps needed...
+# Add your uninstallation steps here
 
 log "Uninstallation process completed successfully."
-
