@@ -83,7 +83,7 @@ Categories=Utility;
 # Function to create a Node-RED desktop icon
 def create_node_red_icon():
     desktop_file = "/home/Automata/Desktop/OpenNodeRedUI.desktop"
-    icon_image = "/home/Automata/AutomataBuildingManagment-HvacController/NodeRedLogo.png"
+    icon_image = "/home/Automata/AutomataBuildingManagment-HvacController/NodeRedlogo.png"
     icon_content = f"""[Desktop Entry]
 Name=Open Node-RED
 Comment=Open Node-RED UI and Dashboard
@@ -179,7 +179,7 @@ def run_installation_steps():
     step += 1
 
     # Step 12: Finalize Node-RED Authorization
-    update_progress(step, total_steps, "Node-RED Authorization Credentials Hashed and Configured, Welcome Automata!")
+    update_progress(step, total_steps, "Node-RED Authorization Credentials Hashed and Configured...\n Welcome Automata!")
     sleep(5)
     step += 1
 
