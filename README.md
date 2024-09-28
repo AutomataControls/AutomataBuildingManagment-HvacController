@@ -153,4 +153,41 @@ The Automata Building Automation Controller ensures compliance with corporate go
 
 ---
 
-This packet provides a comprehensive view of the **Automata Building Automation Controller**, showcasing its flexibility, scalability, and attention to security, compliance, and energy efficiency. Perfect for CEOs, CFOs, Facility Managers, and IT teams.
+## Acknowledgments
+
+This project utilizes several open-source tools and libraries. We would like to acknowledge the following projects and their contributors:
+
+### Core Components
+- [Node-RED](https://nodered.org/) - A programming tool for wiring together hardware devices, APIs and online services.
+- [Mosquitto](https://mosquitto.org/) - An open source MQTT broker.
+
+### Sequent Microsystems Drivers
+- [megabas-rpi](https://github.com/sequentmicrosystems/megabas-rpi)
+- [megaind-rpi](https://github.com/sequentmicrosystems/megaind-rpi)
+- [16univin-rpi](https://github.com/sequentmicrosystems/16univin-rpi)
+- [16relind-rpi](https://github.com/sequentmicrosystems/16relind-rpi)
+- [8relind-rpi](https://github.com/sequentmicrosystems/8relind-rpi)
+
+### Node-RED Nodes and Packages
+- [node-red-dashboard](https://github.com/node-red/node-red-dashboard)
+- [node-red-contrib-ui-led](https://github.com/node-red/node-red-contrib-ui-led)
+- [node-red-contrib-sm-16inpind](https://github.com/sequentmicrosystems/node-red-contrib-sm-16inpind)
+- [node-red-contrib-sm-16relind](https://github.com/sequentmicrosystems/node-red-contrib-sm-16relind)
+- [node-red-contrib-sm-8inputs](https://github.com/sequentmicrosystems/node-red-contrib-sm-8inputs)
+- [node-red-contrib-sm-8relind](https://github.com/sequentmicrosystems/node-red-contrib-sm-8relind)
+- [node-red-contrib-sm-bas](https://github.com/sequentmicrosystems/node-red-contrib-sm-bas)
+- [node-red-contrib-sm-ind](https://github.com/sequentmicrosystems/node-red-contrib-sm-ind)
+- [node-red-node-openweathermap](https://github.com/node-red/node-red-nodes/tree/master/weather/openweathermap)
+- [node-red-contrib-influxdb](https://github.com/node-red/node-red-contrib-influxdb)
+- [node-red-node-email](https://github.com/node-red/node-red-nodes/tree/master/social/email)
+- [node-red-contrib-boolean-logic-ultimate](https://github.com/myfreeweb/node-red-contrib-boolean-logic-ultimate)
+- [node-red-contrib-cpu](https://github.com/node-red/node-red-nodes/tree/master/hardware/cpu)
+- [node-red-contrib-bme280](https://github.com/Neonox31/node-red-contrib-bme280)
+- [node-red-node-aws](https://github.com/node-red/node-red-nodes/tree/master/aws)
+
+### Other Tools and Libraries
+- [Python3-tk](https://docs.python.org/3/library/tkinter.html) - Python interface to Tcl/Tk, used for GUI creation.
+- [Pillow (Python Imaging Library)](https://python-pillow.org/) - Python Imaging Library fork, used for image processing.
+- [raspi-config](https://github.com/RPi-Distro/raspi-config) - Raspberry Pi configuration tool.
+
+We are grateful to the developers and contributors of these projects for their valuable work.
