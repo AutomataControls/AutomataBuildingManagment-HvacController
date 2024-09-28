@@ -83,7 +83,7 @@ Categories=Utility;
 # Function to create a Node-RED desktop icon
 def create_node_red_icon():
     desktop_file = "/home/Automata/Desktop/OpenNodeRedUI.desktop"
-    icon_image = "/home/Automata/AutomataBuildingManagment-HvacController/NodeRedlogo.png"
+    icon_image = "/usr/lib/node_modules/node-red/public/red/images/node-red-icon.svg"
     icon_content = f"""[Desktop Entry]
 Name=Open Node-RED
 Comment=Open Node-RED UI and Dashboard
