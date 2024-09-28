@@ -3,6 +3,11 @@
 # Exit immediately if a command exits with a non-zero status
 set -e
 
+# Function to log messages
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOGFILE"
+}
+
 # Step 1: Ensure the script is running as root
 if [ "$EUID" -ne 0 ]; then
     echo "Please run as root. Re-running with sudo..."
@@ -15,11 +20,11 @@ LOGFILE="/home/Automata/uninstall_log.txt"
 log "Uninstallation started"
 
 # Step 3: Copy and set up the uninstall GUI Python script
-UNINSTALL_GUI="/home/Automata//AutomataBuildingManagment-HvacController/uninstall_progress_gui.py"
+UNINSTALL_GUI="/home/Automata/AutomataBuildingManagment-HvacController/uninstall_progress_gui.py"
 
 # Make sure the uninstall_progress_gui.py file exists
 if [ ! -f "$UNINSTALL_GUI" ]; then
-    echo "Error: $UNINSTALL_GUI not found. Exiting uninstallation process."
+    log "Error: $UNINSTALL_GUI not found. Exiting uninstallation process."
     exit 1
 fi
 
@@ -36,5 +41,4 @@ log "Uninstall Progress GUI launched successfully."
 # Continue with any additional uninstallation steps needed...
 
 log "Uninstallation process completed successfully."
-
 
