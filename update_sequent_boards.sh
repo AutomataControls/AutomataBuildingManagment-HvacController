@@ -83,11 +83,7 @@ def run_update_steps():
             print(f"Board update script {board_update_script} not found.")
             step += 1
 
-    # Step 8: Re-enable services
-    update_progress(step, total_steps, "Re-enabling Node-RED and Chromium services...")
-    run_shell_command("sudo systemctl enable nodered.service chromium-launch.service", step, total_steps, "Re-enabling Node-RED and Chromium services")
-    sleep(5)
-    step += 1
+  
 
     # Step 9: Set permissions for launch_chromium.py
     update_progress(step, total_steps, "Setting ownership and permissions for launch_chromium.py...")
@@ -114,7 +110,13 @@ WantedBy=multi-user.target
     with open('/home/Automata/chromium-launch.service', 'w') as f:
         f.write(chromium_service)
 
-    # Move the file to the systemd directory with elevated permissions
+      # Step 8: Re-enable services
+    update_progress(step, total_steps, "Re-enabling Node-RED and Chromium services...")
+    run_shell_command("sudo systemctl enable nodered.service chromium-launch.service", step, total_steps, "Re-enabling Node-RED and Chromium services")
+    sleep(5)
+    step += 1
+    
+      # Move the file to the systemd directory with elevated permissions
     run_shell_command("sudo mv /home/Automata/chromium-launch.service /etc/systemd/system/", step, total_steps, "Moving Chromium service to systemd directory")
     run_shell_command("sudo systemctl enable chromium-launch.service", step, total_steps, "Enabling Chromium auto-launch service")
     sleep(5)
