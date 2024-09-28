@@ -79,9 +79,6 @@ for service in "${services[@]}"; do
     fi
 done
 
-# Step 8: Run the installation progress GUI
-log "Running installation GUI..."
-sudo -u Automata DISPLAY=:0 python3 /home/Automata/install_progress_gui.py &
 
 # Step 9: Set permissions for repository and Automata files after reboot
 log "Setting permissions for files in repository (redundant step after cloning)..."
@@ -102,6 +99,9 @@ if [ -d "$REPO_DIR" ]; then
     find "/home/Automata" -path "/home/Automata/.cache" -prune -o -type f -name "*.png" -exec chmod +r {} \; 2>> "$LOGFILE"
     chown -R Automata:Automata /home/Automata
 fi
+# Step 8: Run the installation progress GUI
+log "Running installation GUI..."
+sudo -u Automata DISPLAY=:0 python3 /home/Automata/install_progress_gui.py &
 
 # Step 10: Enable single-click execution in PCManFM (file manager)
 log "Enabling single-click execution for desktop icons..."
@@ -111,7 +111,7 @@ mkdir -p "$PCMANFM_CONFIG_DIR"
 cat <<EOL > "$PCMANFM_CONFIG_DIR/pcmanfm.conf"
 [ui]
 show_hidden=1
-single_click=1
+single_click=0
 EOL
 
 # Ensure proper permissions for the config file
