@@ -41,12 +41,12 @@ def run_update_steps():
     # Step 1: Kill all related services (Mosquitto, Node-RED, launch_chromium)
     update_progress(1, total_steps, "Stopping related services...")
     run_shell_command("sudo systemctl stop mosquitto.service nodered.service chromium-launch.service", 1, total_steps, "Stopping Mosquitto, Node-RED, and Chromium services")
-    sleep(2)
+    sleep(5)
 
     # Step 2: Disable Node-RED and launch_chromium services
     update_progress(2, total_steps, "Disabling Node-RED and Chromium services...")
     run_shell_command("sudo systemctl disable nodered.service chromium-launch.service", 2, total_steps, "Disabling Node-RED and Chromium services")
-    sleep(2)
+    sleep(5)
 
     step = 3  # Continue from here after services are stopped
 
@@ -84,13 +84,13 @@ def run_update_steps():
     # Step 8: Re-enable services
     update_progress(step, total_steps, "Re-enabling Node-RED and Chromium services...")
     run_shell_command("sudo systemctl enable nodered.service chromium-launch.service", step, total_steps, "Re-enabling Node-RED and Chromium services")
-    sleep(2)
+    sleep(5)
     step += 1
 
     # Step 9: Set permissions for launch_chromium.py
     update_progress(step, total_steps, "Setting ownership and permissions for launch_chromium.py...")
     run_shell_command("sudo chown Automata:Automata /home/Automata/launch_chromium.py && sudo chmod +x /home/Automata/launch_chromium.py", step, total_steps, "Setting ownership and permissions for launch_chromium.py")
-    sleep(2)
+    sleep(5)
     step += 1
 
     # Step 10: Create a systemd service to launch Chromium at boot
@@ -115,13 +115,13 @@ WantedBy=multi-user.target
     # Move the file to the systemd directory with elevated permissions
     run_shell_command("sudo mv /home/Automata/chromium-launch.service /etc/systemd/system/", step, total_steps, "Moving Chromium service to systemd directory")
     run_shell_command("sudo systemctl enable chromium-launch.service", step, total_steps, "Enabling Chromium auto-launch service")
-    sleep(2)
+    sleep(5)
     step += 1
 
     # Step 11: Enable Node-RED service, restart Mosquitto and Chromium services, and reload daemons
     update_progress(step, total_steps, "Enabling Node-RED, restarting Mosquitto and Chromium services, and reloading daemons...")
     run_shell_command("sudo systemctl enable nodered.service && sudo systemctl start mosquitto.service nodered.service chromium-launch.service && sudo systemctl daemon-reload", step, total_steps, "Enabling Node-RED, restarting services, and reloading daemons")
-    sleep(2)
+    sleep(5)
     step += 1
 
     # Step 12: Create a desktop icon to open Node-RED UI pages
@@ -141,7 +141,7 @@ Categories=Utility;
     
     # Set the correct permissions and ownership for the icon
     run_shell_command("chmod +x /home/Automata/Desktop/OpenNodeRedUI.desktop && chown Automata:Automata /home/Automata/Desktop/OpenNodeRedUI.desktop", step, total_steps, "Setting permissions for Node-RED desktop icon")
-    sleep(2)
+    sleep(5)
     step += 1
 
     # Step 13: Create shell script to open Node-RED UI pages
@@ -156,7 +156,7 @@ xdg-open http://127.0.0.1:1880/ui
 
     # Set permissions for the shell script
     run_shell_command("chmod +x /home/Automata/open_node_red.sh", step, total_steps, "Setting permissions for Node-RED shell script")
-    sleep(2)
+    sleep(5)
     step += 1
 
     # Step 14: Final step - prompt for reboot
