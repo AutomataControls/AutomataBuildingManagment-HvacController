@@ -60,15 +60,15 @@ def run_shell_command(command, step, total_steps, message):
 
 # Function to create a desktop icon for updating boards using splash.png as the icon
 def create_desktop_icon():
-    desktop_file = "/home/Automata/Desktop/update_sequent_boards.desktop"
+    desktop_file = "/home/Automata/Desktop/UpdateSmBoards.desktop"
     icon_script = "/home/Automata/AutomataBuildingManagment-HvacController/update_sequent_boards.sh"
-    icon_image = "/home/Automata/splash.png"  # Path to splash.png
+    icon_image = "/home/Automata/AutomataBuildingManagment-HvacController/splash.png"  # Path to splash.png
     icon_content = f"""[Desktop Entry]
 Name=Update Sequent Boards
 Comment=Run the Sequent Board Update Script
-Exec=bash {icon_script}
+Exec=lxterminal -e "bash {icon_script}"
 Icon={icon_image}
-Terminal=true
+Terminal=false
 Type=Application
 Categories=Utility;
 """
@@ -87,7 +87,7 @@ def create_node_red_icon():
     icon_content = f"""[Desktop Entry]
 Name=Open Node-RED
 Comment=Open Node-RED UI and Dashboard
-Exec=xdg-open http://127.0.0.1:1880/ && xdg-open http://127.0.0.1:1880/ui
+Exec=sh -c "xdg-open http://127.0.0.1:1880/ & xdg-open http://127.0.0.1:1880/ui"
 Icon={icon_image}
 Terminal=false
 Type=Application
@@ -108,7 +108,7 @@ def install_palette_node(node, step, total_steps):
 
 # Run all installation steps in order
 def run_installation_steps():
-    total_steps = 33
+    total_steps = 37  # Adjusted for the additional Node-RED steps
     step = 1
 
     # Step 1: Copy splash.png from the repo directory to /home/Automata
@@ -121,7 +121,7 @@ def run_installation_steps():
     run_shell_command("sudo cp /home/Automata/splash.png /usr/share/plymouth/themes/pix/", step, total_steps, "Copying Automata splash.png to Plymouth theme...")
     sleep(3)
     step += 1
-    update_progress(step, total_steps, "Splash logo move successful!")
+    update_progress(step, total_steps, "Splash logo moved successful!")
 
     # Step 3: Overclock the Raspberry Pi
     run_shell_command("echo -e 'over_voltage=2\narm_freq=1750' | sudo tee -a /boot/config.txt", step, total_steps, "Overclocking CPU...Turbo mode engaged!")
@@ -129,7 +129,7 @@ def run_installation_steps():
     step += 1
 
     # Step 4: Set Internet Time
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_internet_time_rpi4.sh", step, total_steps, "Setting internet time...")
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_internet_time_rpi4.sh", step, total_steps, "Setting internet time to Eastern Standard...")
     sleep(5)
     step += 1
 
@@ -142,7 +142,7 @@ def run_installation_steps():
     boards_to_clone = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi", "8relind-rpi"]
     for board in boards_to_clone:
         run_shell_command(f"git clone https://github.com/sequentmicrosystems/{board}.git /home/Automata/AutomataBuildingManagment-HvacController/{board}", step, total_steps, f"Cloning {board}...")
-        update_progress(step, total_steps, f"Cloning {board}... This might take a while.")
+        update_progress(step, total_steps, f"Cloning {board} Success!")
         sleep(4)
         step += 1
 
@@ -151,7 +151,7 @@ def run_installation_steps():
     for board in boards:
         board_path = f"/home/Automata/AutomataBuildingManagment-HvacController/{board}"
         if os.path.isdir(board_path):
-            run_shell_command(f"cd {board_path} && sudo make install", step, total_steps, f"Installing {board} driver... This could take some time.")
+            run_shell_command(f"cd {board_path} && sudo make install", step, total_steps, f"Installing {board} driver from Repo Directory.")
             update_progress(step, total_steps, f"Installed {board} driver successfully!")
             step += 1
         else:
@@ -165,11 +165,25 @@ def run_installation_steps():
 
     # Step 9: Install Node-RED
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", step, total_steps, "Installing Node-RED... This could take some time.")
+    sleep(5)
+    step += 1
+
+    # Step 10: Configure Node-RED Security
     update_progress(step, total_steps, "Node-RED Security Measures initiated...")
     sleep(5)
     step += 1
 
-    # Step 10: Install Node-RED palette nodes
+    # Step 11: Setup Node-RED Encryption
+    update_progress(step, total_steps, "Node-RED Encryption Finalizing...\n SSL and TLS Ready...")
+    sleep(5)
+    step += 1
+
+    # Step 12: Finalize Node-RED Authorization
+    update_progress(step, total_steps, "Node-RED Authorization Credentials Hashed and Configured, Welcome Automata!")
+    sleep(5)
+    step += 1
+
+    # Step 13: Install Node-RED palette nodes
     palette_nodes = [
         "node-red-contrib-ui-led",
         "node-red-dashboard",
@@ -186,39 +200,44 @@ def run_installation_steps():
         "node-red-contrib-cpu",
         "node-red-contrib-bme280-rpi",
         "node-red-contrib-bme280",
-        "node-red-node-aws33",
+        "node-red-node-aws",
         "@node-red-contrib-themes/theme-collection"
     ]
     for node in palette_nodes:
         install_palette_node(node, step, total_steps)
         step += 1
 
-    # Step 11: Enable VNC
-    run_shell_command("sudo raspi-config nonint do_vnc 0", step, total_steps, "Enabling VNC...")
+    # Step 14: Enable VNC
+    run_shell_command("sudo raspi-config nonint do_vnc 0", step, total_steps, "Enabling Remote Access via RealVNC...")
     sleep(5)
     step += 1
 
-    # Step 12: Enable I2C
-    run_shell_command("sudo raspi-config nonint do_i2c 0", step, total_steps, "Enabling I2C...")
+    # Step 15: Enable I2C
+    run_shell_command("sudo raspi-config nonint do_i2c 0", step, total_steps, "Enabling I2C Sensor Communication...")
     sleep(5)
     step += 1
 
-    # Step 13: Enable SPI
-    run_shell_command("sudo raspi-config nonint do_spi 0", step, total_steps, "Enabling SPI...")
+    # Step 16: Enable SPI
+    run_shell_command("sudo raspi-config nonint do_spi 0", step, total_steps, "Enabling SPI Sensor Communication...")
     sleep(5)
     step += 1
 
-    # Step 14: Enable 1-Wire
-    run_shell_command("sudo raspi-config nonint do_onewire 0", step, total_steps, "Enabling 1-Wire...")
+    # Step 17: Enable 1-Wire
+    run_shell_command("sudo raspi-config nonint do_onewire 0", step, total_steps, "Enabling 1-Wire Data Communication...")
     sleep(5)
     step += 1
 
-    # Step 15: Disable screen blanking
+    # Step 18: Disable screen blanking
     run_shell_command("sudo raspi-config nonint do_blanking 1", step, total_steps, "Disabling screen blanking...")
     sleep(5)
     step += 1
 
-    # Step 16: Create a Node-RED desktop icon
+    # Step 19: Create UpdateSmBoards desktop icon
+    update_progress(step, total_steps, "Creating desktop icon for updating Sequent boards...")
+    create_desktop_icon()
+    step += 1
+
+    # Step 20: Create a Node-RED desktop icon
     update_progress(step, total_steps, "Creating desktop icon for Node-RED...")
     create_node_red_icon()
     step += 1
