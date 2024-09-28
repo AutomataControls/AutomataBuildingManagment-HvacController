@@ -1,6 +1,3 @@
-# Create Python GUI for board update progress
-UPDATE_GUI="/home/Automata/update_progress_gui.py"
-cat << 'EOF' > $UPDATE_GUI
 import tkinter as tk
 from tkinter import ttk
 import subprocess
@@ -121,9 +118,9 @@ WantedBy=multi-user.target
     sleep(2)
     step += 1
 
-    # Step 11: Restart all services and reload daemons
-    update_progress(step, total_steps, "Restarting Mosquitto, Node-RED, Chromium services, and reloading daemons...")
-    run_shell_command("sudo systemctl start mosquitto.service nodered.service chromium-launch.service && sudo systemctl daemon-reload", step, total_steps, "Restarting all services and reloading daemons")
+    # Step 11: Enable Node-RED service, restart Mosquitto and Chromium services, and reload daemons
+    update_progress(step, total_steps, "Enabling Node-RED, restarting Mosquitto and Chromium services, and reloading daemons...")
+    run_shell_command("sudo systemctl enable nodered.service && sudo systemctl start mosquitto.service nodered.service chromium-launch.service && sudo systemctl daemon-reload", step, total_steps, "Enabling Node-RED, restarting services, and reloading daemons")
     sleep(2)
     step += 1
 
@@ -134,7 +131,7 @@ WantedBy=multi-user.target
 Name=Open Node-RED UI
 Comment=Launch Node-RED interface
 Exec=/home/Automata/open_node_red.sh
-Icon=/home/Automata/AutomataBuildingManagment-HvacController/NodeRedLogo.png
+Icon=/home/Automata/AutomataBuildingManagment-HvacController/NodeRedlogo.png
 Terminal=false
 Type=Application
 Categories=Utility;
@@ -211,10 +208,3 @@ status_label.pack(pady=10)
 
 threading.Thread(target=run_update_steps).start()
 root.mainloop()
-EOF
-
-# Ensure the Python script has execute permissions
-chmod +x $UPDATE_GUI
-
-# Run the Python GUI script
-python3 $UPDATE_GUI
