@@ -1,4 +1,3 @@
-
 import tkinter as tk
 from tkinter import ttk
 import subprocess
@@ -49,21 +48,28 @@ def update_progress(step, total_steps, message):
 # Function to run shell commands
 def run_shell_command(command, step, total_steps, message):
     update_progress(step, total_steps, message)
-    result = subprocess.run(command, shell=True, text=True, capture_output=True, timeout=600)
-    if result.returncode != 0:
-        status_label.config(text=f"Error during: {message}. Check logs for details.")
-        print(f"Error output: {result.stderr}")
-        root.update_idletasks()
-    else:
-        print(f"Command output: {result.stdout}")
+    try:
+        result = subprocess.run(command, shell=True, text=True, capture_output=True, timeout=600)
+        if result.returncode != 0:
+            status_label.config(text=f"Error during: {message}. Check logs for details.")
+            print(f"Error output: {result.stderr}")
+        else:
+            print(f"Command output: {result.stdout}")
+    except subprocess.TimeoutExpired:
+        status_label.config(text=f"Timeout during: {message}. Command took too long to execute.")
+    except Exception as e:
+        status_label.config(text=f"Unexpected error during: {message}. {str(e)}")
+    root.update_idletasks()
 
 # Function to create a desktop icon for updating boards using splash.png as the icon
 def create_desktop_icon():
-    # ... (implementation details)
+    # Implementation details here
+    pass
 
 # Function to create a Node-RED desktop icon
 def create_node_red_icon():
-    # ... (implementation details)
+    # Implementation details here
+    pass
 
 # Function to install Node-RED palette nodes
 def install_palette_node(node, step, total_steps):
@@ -76,7 +82,7 @@ def run_installation_steps():
     step = 1
 
     # Steps 1-17: Various installation and configuration steps
-    # ... (implementation details for each step)
+    # Implementation details for each step here
 
     # Final Step: Installation complete
     update_progress(total_steps, total_steps, "Installation complete. Please reboot.")
@@ -84,10 +90,11 @@ def run_installation_steps():
 
 # Function to show the reboot prompt
 def show_reboot_prompt():
-    # ... (implementation details)
+    # Implementation details here
+    pass
 
 # Start the installation steps in a separate thread to keep the GUI responsive
-threading.Thread(target=run_installation_steps).start()
+threading.Thread(target=run_installation_steps, daemon=True).start()
 
 # Start spinner animation in a separate thread
 threading.Thread(target=spin_animation, daemon=True).start()
