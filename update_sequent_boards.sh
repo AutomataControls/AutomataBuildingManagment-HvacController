@@ -63,6 +63,7 @@ def run_update_steps():
         if os.path.isfile(board_update_script):
             update_progress(step, total_steps, f"Setting executable permissions for {board} update script...")
             run_shell_command(f"sudo chmod +x {board_update_script}", step, total_steps, f"Setting executable permissions for {board}...")
+            sleep(5)
 
             # Fetch CPU ID and display it in the GUI
             cpuid = get_cpuid(f"/home/Automata/AutomataBuildingManagment-HvacController/{board}")
@@ -70,6 +71,7 @@ def run_update_steps():
 
             # Change directory and run the update script directly
             result = run_shell_command(f"cd /home/Automata/AutomataBuildingManagment-HvacController/{board}/update && sudo ./update 0", step, total_steps, f"Running update for {board}...")
+            sleep(5)
 
             if result.returncode == 0:
                 success = True
@@ -119,8 +121,8 @@ WantedBy=multi-user.target
     step += 1
 
     # Step 11: Enable Node-RED service, restart Mosquitto and Chromium services, and reload daemons
-    update_progress(step, total_steps, "Enabling Node-RED, restarting Mosquitto and Chromium services, and reloading daemons...")
-    run_shell_command("sudo systemctl enable nodered.service && sudo systemctl start mosquitto.service nodered.service chromium-launch.service && sudo systemctl daemon-reload", step, total_steps, "Enabling Node-RED, restarting services, and reloading daemons")
+    update_progress(step, total_steps, "Enabling Node-RED, restarting services, and reloading daemons...")
+    run_shell_command("sudo systemctl enable nodered.service && sudo systemctl enable mosquitto.service && sudo systemctl enable chromium-launch.service && sudo systemctl daemon-reload && sudo systemctl start nodered.service && sudo systemctl start mosquitto.service && sudo systemctl start chromium-launch.service", step, total_steps, "Enabling Node-RED, restarting services, and reloading daemons")
     sleep(5)
     step += 1
 
@@ -194,7 +196,7 @@ def show_reboot_prompt():
 
 root = tk.Tk()
 root.title("Automata Board Updates")
-root.geometry("600x400")
+root.geometry("600x450")  # Increased height to accommodate footer
 root.configure(bg='#2e2e2e')
 
 label = tk.Label(root, text="Automata Board Updates", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
@@ -205,6 +207,10 @@ progress.pack(pady=20)
 
 status_label = tk.Label(root, text="Starting updates...", font=("Helvetica", 12), fg="orange", bg="#2e2e2e")
 status_label.pack(pady=10)
+
+# Add footer
+footer = tk.Label(root, text="Developed by A. Jewell Sr, 2023", font=("Helvetica", 10, "bold"), fg="#00b3b3", bg="#2e2e2e")
+footer.pack(side="bottom", pady=10)
 
 threading.Thread(target=run_update_steps).start()
 root.mainloop()
