@@ -1,5 +1,6 @@
 from setuptools import setup, find_packages
 
+# Read the contents of your README file
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
@@ -27,28 +28,21 @@ setup(
     install_requires=[
         "tkinter",
         "pillow",
-        # Add other dependencies here
+        # Add other dependencies here if needed
     ],
-    include_package_data=True,
-    scripts=[
-        'automata/scripts/AutomataControllerInstall.sh',
-        'automata/scripts/Uninstall.sh',
-        'automata/scripts/setup_mosquitto.sh',
-        'automata/scripts/update_sequent_boards.sh',
-        'automata/scripts/set_background.sh',
-        'automata/scripts/increase_swap_size.sh',
-        'automata/scripts/install_node_red.sh',
-    ],
+    include_package_data=True,  # Include data files as specified in MANIFEST.in
     package_data={
+        # Define the directories and file types to be included in the package
         'automata': [
-            'data/*',
-            'flows/*',
+            'data/*',              # Include all files in 'data' directory
+            'NodeRedLogic/*.json', # Include all JSON files in 'NodeRedLogic' directory
         ],
     },
     entry_points={
         'console_scripts': [
-            'automata-install=automata.scripts.AutomataControllerInstall:main',
-            'automata-start=automata.scripts.start:main',
+            # If you want to define custom commands that can be run from the console,
+            # specify them here. Uncomment and modify if applicable.
+            # 'automata-start=automata.some_module:start_function',
         ],
     },
 )
