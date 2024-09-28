@@ -34,11 +34,6 @@ fi
 LOGFILE="/home/Automata/install_log.txt"
 log "Installation started"
 
-# Step 3: Install xdotool
-log "Installing xdotool..."
-apt-get update
-apt-get install -y xdotool
-
 # Step 5: Install minimal dependencies for GUI creation
 log "Installing minimal dependencies for GUI creation..."
 apt-get install -y python3-tk python3-pil python3-pil.imagetk gnome-terminal dos2unix
