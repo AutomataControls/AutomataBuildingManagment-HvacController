@@ -2,7 +2,7 @@
 
 ## Advanced IoT-driven, Scalable, and Energy-Efficient Solution for Commercial and Industrial Applications
 
-![Automata Logo](splash.png)
+![Automata Logo](https://github.com/AutomataControls/AutomataBuildingManagment-HvacController/blob/main/splash.png?raw=true)
 
 ---
 
@@ -153,4 +153,3 @@ Stay tuned for updates and new releases!
 
 ---
 
-[Your existing content for Contributing, License, Support, and Acknowledgments]
