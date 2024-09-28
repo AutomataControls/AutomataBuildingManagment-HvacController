@@ -2,7 +2,7 @@
 
 ## Advanced IoT-driven, Scalable, and Energy-Efficient Solution for Commercial and Industrial Applications
 
-![Automata Logo](automata/data/splash.png)
+![Automata Logo](splash.png)
 
 ---
 
