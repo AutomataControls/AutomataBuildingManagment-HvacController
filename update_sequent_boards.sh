@@ -1,47 +1,3 @@
-#!/bin/bash
-
-# Exit immediately if a command exits with a non-zero status
-set -e
-
-# Function to log messages
-log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
-}
-
-# Function to handle errors
-handle_error() {
-    log "Error occurred in line $1"
-    exit 1
-}
-
-# Set up error handling
-trap 'handle_error $LINENO' ERR
-
-# Ensure the script is running as root
-if [ "$EUID" -ne 0 ]; then
-    echo "Please run as root. Re-running with sudo..."
-    sudo bash "$0" "$@"
-    exit
-fi
-
-# Install xdotool if not already installed
-if ! command -v xdotool &> /dev/null; then
-    log "Installing xdotool..."
-    apt-get update
-    apt-get install -y xdotool
-fi
-
-# Minimize the current terminal window
-if command -v xdotool &> /dev/null; then
-    log "Minimizing the current terminal window..."
-    current_window=$(xdotool getactivewindow)
-    xdotool windowminimize $current_window
-else
-    log "xdotool is not installed. Unable to minimize window automatically."
-    log "Please minimize this window manually to avoid clutter."
-    sleep 5
-fi
-
 # Create Python GUI for board update progress
 UPDATE_GUI="/home/Automata/update_progress_gui.py"
 cat << 'EOF' > $UPDATE_GUI
@@ -261,12 +217,4 @@ EOF
 chmod +x $UPDATE_GUI
 
 # Run the Python GUI script
-log "Launching the update progress GUI..."
-sudo -u Automata DISPLAY=:0 python3 $UPDATE_GUI &
-
-# Keep the script running until the Python process ends
-while pgrep -f "python3 $UPDATE_GUI" > /dev/null; do
-    sleep 1
-done
-
-log "Board update process completed."
+python3 $UPDATE_GUI
