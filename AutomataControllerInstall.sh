@@ -39,18 +39,6 @@ log "Installing xdotool..."
 apt-get update
 apt-get install -y xdotool
 
-# Step 4: Minimize the current terminal window
-if command -v xdotool &> /dev/null
-then
-    log "Minimizing the current terminal window..."
-    current_window=$(xdotool getactivewindow)
-    xdotool windowminimize $current_window
-else
-    log "xdotool is not installed. Unable to minimize window automatically."
-    log "Please minimize this window manually to avoid clutter."
-    sleep 5
-fi
-
 # Step 5: Install minimal dependencies for GUI creation
 log "Installing minimal dependencies for GUI creation..."
 apt-get install -y python3-tk python3-pil python3-pil.imagetk gnome-terminal dos2unix
