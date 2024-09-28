@@ -26,7 +26,6 @@ setup(
     ],
     python_requires=">=3.7",
     install_requires=[
-        "tkinter",
         "pillow",
         # Add other dependencies here if needed
     ],
