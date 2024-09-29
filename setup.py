@@ -1,6 +1,5 @@
 from setuptools import setup, find_packages
 
-# Read the contents of your README file
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
@@ -8,16 +7,11 @@ setup(
     name="automata-building-management",
     version="1.0.2",
     author="A. Jewell Sr",
-    author_email="AutomataControls@gmail.com",
+    author_email="your.email@example.com",
     description="Automata Building Management & HVAC Controller - Advanced IoT-driven solution for commercial and industrial applications",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/AutomataControls/AutomataBuildingManagment-HvacController",
-    project_urls={
-        "Documentation": "https://github.com/AutomataControls/AutomataBuildingManagment-HvacController/wiki",
-        "Source Code": "https://github.com/AutomataControls/AutomataBuildingManagment-HvacController",
-        "PyPI": "https://pypi.org/project/automata-building-management/"
-    },
     packages=find_packages(),
     classifiers=[
         "Development Status :: 5 - Production/Stable",
@@ -31,23 +25,28 @@ setup(
     ],
     python_requires=">=3.7",
     install_requires=[
-        "pillow",
-        # Add other dependencies here if needed
+        "tkinter",      # For GUI components like those in install_progress_gui.py
+        "pillow",       # For handling images
+        "requests",     # For making HTTP requests (if applicable)
+        "numpy",        # For numerical computations (optional, if applicable)
+        "matplotlib",   # For any plotting or visualization needs (optional)
     ],
-    include_package_data=True,  # Include data files as specified in MANIFEST.in
-    package_data={
-        # Define the directories and file types to be included in the package
-        'automata': [
-            'data/*',              # Include all files in 'data' directory
-            'Flow_Chart/*',              # Include all files in 'data' directory
-            'NodeRedLogic/*.json', # Include all JSON files in 'NodeRedLogic' directory
-        ],
-    },
+    include_package_data=True,
+    scripts=[
+        'AutomataControllerInstall.sh',
+        'increase_swap_size.sh',
+        'install_node_red.sh',
+        'set_background.sh',
+        'set_internet_time_rpi4.sh',
+        'InstallNodeRedPallete.sh',
+        'Uninstall.sh',
+    ],
+    data_files=[
+        ('', ['README.md', 'LICENSE', 'splash.png', 'NodeRedlogo.png']),
+    ],
     entry_points={
         'console_scripts': [
-            # If you want to define custom commands that can be run from the console,
-            # specify them here. Uncomment and modify if applicable.
-            # 'automata-start=automata.some_module:start_function',
+            'automata-install=install_wrapper:main',  # Define entry point for running the shell script
         ],
     },
 )
