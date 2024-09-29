@@ -144,7 +144,7 @@ def run_installation_steps():
     step += 1
 
     # New Step 7: Setup Mosquitto
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/Scripts/setup_mosquitto.sh", step, total_steps, "Setting up Mosquitto MQTT broker...")
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/setup_mosquitto.sh", step, total_steps, "Setting up Mosquitto MQTT broker...")
     sleep(5)
     step += 1
 
