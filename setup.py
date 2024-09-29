@@ -7,7 +7,7 @@ setup(
     name="automata-building-management",
     version="1.0.2",
     author="A. Jewell Sr",
-    author_email="your.email@example.com",
+    author_email="AutomataControls@protonmail.com",
     description="Automata Building Management & HVAC Controller - Advanced IoT-driven solution for commercial and industrial applications",
     long_description=long_description,
     long_description_content_type="text/markdown",
