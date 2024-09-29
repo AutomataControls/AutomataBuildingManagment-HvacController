@@ -7,7 +7,7 @@ setup(
     name="automata-building-management",
     version="1.0.2",
     author="A. Jewell Sr",
-    author_email="AutomataControls@protonmail.com",
+    author_email="AutomataControls@Protonmail.com",
     description="Automata Building Management & HVAC Controller - Advanced IoT-driven solution for commercial and industrial applications",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -45,7 +45,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'automata-install=install_wrapper:main',  # Define entry point for running the shell script
+            'automata-install=run_automata_install:main',  # Run the shell script through this entry point
         ],
     },
 )
