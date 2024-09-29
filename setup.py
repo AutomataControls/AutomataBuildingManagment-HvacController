@@ -25,7 +25,6 @@ setup(
     ],
     python_requires=">=3.7",
     install_requires=[
-        "tkinter",      # For GUI components like those in install_progress_gui.py
         "pillow",       # For handling images
         "requests",     # For making HTTP requests (if applicable)
         "numpy",        # For numerical computations (optional, if applicable)
