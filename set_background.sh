@@ -3,74 +3,47 @@
 # Path to the image
 IMAGE_PATH="/home/Automata/AutomataControls-AutomataBuildingManagment-HvacController/splash.png"
 
-# Create configuration directories if they don't exist
+# Function to create configuration directories if they don't exist
 create_config_directories() {
-    # Define the directories to be created
-    CONFIG_DIRS=("$HOME/.config/pcmanfm/LXDE" "$HOME/.config/pcmanfm/LXDE-pi")
-
-    for CONFIG_DIR in "${CONFIG_DIRS[@]}"; do
-        if [ ! -d "$CONFIG_DIR" ]; then
-            mkdir -p "$CONFIG_DIR"
-            echo "Created directory: $CONFIG_DIR."
-        fi
-    done
+    CONFIG_DIR="$HOME/.config/pcmanfm/LXDE-pi"
+    if [ ! -d "$CONFIG_DIR" ]; then
+        mkdir -p "$CONFIG_DIR"
+        echo "Created configuration directory: $CONFIG_DIR"
+    fi
 }
 
 # Function to set the wallpaper
 set_wallpaper() {
-    # Ensure the DISPLAY variable is set for graphical operations
-    export DISPLAY=:0
-
-    # Check if pcmanfm is running as the desktop manager
-    if ! pgrep -x "pcmanfm" > /dev/null; then
-        echo "pcmanfm is not running. Starting pcmanfm as the desktop manager..."
-        DISPLAY=:0 pcmanfm --desktop &
-        sleep 5  # Give pcmanfm time to start
-    else
-        echo "pcmanfm is already running."
+    # Set the wallpaper using pcmanfm command and check for errors
+    DISPLAY=:0 pcmanfm --set-wallpaper="$IMAGE_PATH" --wallpaper-mode=stretch &>/dev/null
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to set wallpaper using pcmanfm."
+        return 1
     fi
 
-    # Set the wallpaper using pcmanfm for both LXDE and LXDE-pi profiles
-    DISPLAY=:0 pcmanfm --set-wallpaper="$IMAGE_PATH" --wallpaper-mode=crop
-    echo "Wallpaper set using pcmanfm."
+    # Update the desktop configuration file
+    CONFIG_FILE="$HOME/.config/pcmanfm/LXDE-pi/desktop-items-0.conf"
+    echo "[*]" > "$CONFIG_FILE"
+    echo "wallpaper=$IMAGE_PATH" >> "$CONFIG_FILE"
+    echo "wallpaper_mode=stretch" >> "$CONFIG_FILE"
 
-    # Update the desktop configuration files
-    for CONFIG_DIR in "$HOME/.config/pcmanfm/LXDE" "$HOME/.config/pcmanfm/LXDE-pi"; do
-        CONFIG_FILE="$CONFIG_DIR/desktop-items-0.conf"
-        
-        # Create a default configuration file if it doesn't exist
-        if [ ! -f "$CONFIG_FILE" ]; then
-            echo "[*]" > "$CONFIG_FILE"
-            echo "wallpaper=$IMAGE_PATH" >> "$CONFIG_FILE"
-            echo "wallpaper_mode=crop" >> "$CONFIG_FILE"
-            echo "Created default configuration file $CONFIG_FILE."
-        else
-            # Update existing configuration file
-            sed -i "s|wallpaper=.*|wallpaper=$IMAGE_PATH|g" "$CONFIG_FILE"
-            sed -i "s|wallpaper_mode=.*|wallpaper_mode=crop|g" "$CONFIG_FILE"
-            echo "Updated wallpaper configuration in $CONFIG_FILE."
-        fi
-    done
-
-    # Log the result
-    echo "Wallpaper set to $IMAGE_PATH at $(date)" | tee -a "$HOME/wallpaper_set.log"
+    if grep -q "wallpaper=$IMAGE_PATH" "$CONFIG_FILE"; then
+        echo "Wallpaper path correctly set in configuration file."
+    else
+        echo "Failed to update wallpaper path in configuration file."
+    fi
 }
 
-# Function to restart pcmanfm if not active
-restart_pcmanfm() {
-    echo "Restarting pcmanfm to ensure it's active and managing the desktop..."
-    pkill -x "pcmanfm"
-    sleep 2  # Wait for pcmanfm to fully terminate
-    DISPLAY=:0 pcmanfm --desktop &
-    sleep 5  # Give pcmanfm time to start
-}
+# Ensure configuration directories are present
+create_config_directories
 
 # Wait for the desktop environment to fully load (adjust the sleep time if needed)
 sleep 10
 
-# Create configuration directories before setting the wallpaper
-create_config_directories
-
-# Restart pcmanfm and set the wallpaper
-restart_pcmanfm
+# Run the function to set the wallpaper and log the result
 set_wallpaper
+if [ $? -eq 0 ]; then
+    echo "Wallpaper successfully set to $IMAGE_PATH at $(date)" >> "$HOME/wallpaper_set.log"
+else
+    echo "Failed to set wallpaper. Check logs for details." >> "$HOME/wallpaper_set.log"
+fi
