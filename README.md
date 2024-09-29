@@ -1,17 +1,26 @@
 # Automata Building Automation Controller
 
-## Advanced IoT-driven, Scalable, and Energy-Efficient Solution for Commercial and Industrial Applications
-
 ![Automata Logo](https://github.com/AutomataControls/AutomataBuildingManagment-HvacController/blob/main/splash.png?raw=true)
 
-
 ---
+
 ![PyPI Version](https://img.shields.io/pypi/v/automata-building-management)
 ![PyPI Downloads](https://img.shields.io/pypi/dm/automata-building-management)
 ![License](https://img.shields.io/pypi/l/automata-building-management)
 ![Python Version](https://img.shields.io/pypi/pyversions/automata-building-management)
 
+---
+
+## Executive Summary
+
+Automata Building Management & HVAC Controller is an advanced IoT-driven, scalable, and energy-efficient solution designed for commercial and industrial applications. The controller provides intelligent HVAC management, lighting control, energy optimization, and predictive maintenance features, all within a user-friendly interface and scalable architecture.
+
+The solution allows for real-time monitoring, data collection, and system control, making it an ideal choice for facility managers and building automation professionals.
+
+---
+
 ## Table of Contents
+
 1. [Executive Summary](#executive-summary)
 2. [Key Features](#key-features)
 3. [System Architecture](#system-architecture)
@@ -30,12 +39,6 @@
 16. [License](#license)
 17. [Support](#support)
 18. [Acknowledgments](#acknowledgments)
-
----
-
-## Executive Summary
-
-[Your existing executive summary content]
 
 ---
 
@@ -75,86 +78,17 @@
 
 ---
 
-[Your existing content for System Architecture, Data Collection and Sensor Integration, Control Logic and Decision Making, Safety Protocols, IT Considerations, Compliance, and Technical Specifications]
-
----
-
 ## Installation
 
 ### Prerequisites
+
 - Raspberry Pi 4B (8GB RAM) or compatible hardware
 - Raspbian Linux OS
 - Internet connection for package downloads
 
 ### Step-by-Step Installation
+
 1. Clone the repository:
-   ```
+
+   ```bash
    git clone https://github.com/AutomataControls/AutomataBuildingManagment-HvacController.git
-   ```
-
-2. Navigate to the project directory:
-   ```
-   cd AutomataBuildingManagment-HvacController
-   ```
-
-3. Run the installation script:
-   ```
-   sudo bash automata/scripts/AutomataControllerInstall.sh
-   ```
-
-4. Follow the on-screen prompts to complete the installation.
-
-5. Reboot the system when prompted:
-   ```
-   sudo reboot
-   ```
-
-For detailed installation instructions, please refer to the [Installation Guide](docs/INSTALLATION.md).
-
----
-
-## Usage
-
-1. Start the Automata Building Automation Controller:
-   ```
-   automata-start
-   ```
-
-2. Access the web interface by navigating to `http://<your-raspberry-pi-ip>:1880` in your web browser.
-
-3. Log in using the credentials provided during installation.
-
-4. Use the dashboard to monitor and control your building's systems.
-
-For detailed usage instructions, please refer to the [User Manual](docs/USER_MANUAL.md).
-
----
-
-## Testing and Operational Experience
-
-[Your existing content on real-world testing and operational experience]
-
----
-
-## Troubleshooting
-
-If you encounter any issues while using the Automata Building Automation Controller, please refer to our [Troubleshooting Guide](docs/TROUBLESHOOTING.md) for common problems and their solutions.
-
-For issues not covered in the guide, please contact our support team or open an issue on our GitHub repository.
-
----
-
-## Roadmap
-
-We are continuously working to improve the Automata Building Automation Controller. Here are some features and enhancements we're planning for future releases:
-
-- Enhanced machine learning capabilities for more accurate predictions
-- Integration with additional third-party building management systems
-- Expanded support for renewable energy sources and storage systems
-- Advanced fault detection and diagnostics for HVAC equipment
-- Improved natural language processing for voice-controlled building management
-
-Stay tuned for updates and new releases!
-
----
-
