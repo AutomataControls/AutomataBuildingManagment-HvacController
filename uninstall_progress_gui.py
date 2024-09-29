@@ -44,7 +44,7 @@ def run_shell_command(command, step, total_steps, message):
     root.update_idletasks()
 
 def run_uninstallation_steps():
-    total_steps = 8
+    total_steps = 10
 
     # Step 1: Stop and remove Mosquitto service and user credentials
     run_shell_command("sudo systemctl stop mosquitto && sudo systemctl disable mosquitto && sudo apt-get remove --purge -y mosquitto mosquitto-clients && sudo rm -f /etc/mosquitto/passwd && sudo rm -f /etc/mosquitto/mosquitto.conf", 1, total_steps, "Removing Mosquitto...")
@@ -75,7 +75,19 @@ def run_uninstallation_steps():
     # Step 7: Remove the cloned repository directory
     run_shell_command("sudo rm -rf /home/Automata/AutomataBuildingManagment-HvacController", 7, total_steps, "Removing repository directory...")
 
-    # Step 8 (Updated): Remove log files, .png, .py, .txt files, Node-RED related files, and additional directories/files
+    # Step 8: Revert wallpaper to default
+    run_shell_command("""
+        sudo cp /usr/share/rpd-wallpaper/raspberry-pi-logo.png /etc/alternatives/desktop-background &&
+        pcmanfm --set-wallpaper="/etc/alternatives/desktop-background"
+    """, 8, total_steps, "Reverting wallpaper to default...")
+
+    # Step 9: Revert splash screen to default
+    run_shell_command("""
+        sudo rm -f /usr/share/plymouth/themes/pix/splash.png &&
+        sudo cp /usr/share/plymouth/themes/pix/splash.orig.png /usr/share/plymouth/themes/pix/splash.png
+    """, 9, total_steps, "Reverting splash screen to default...")
+
+    # Step 10: Remove log files, .png, .py, .txt files, Node-RED related files, and additional directories/files
     run_shell_command("""
         sudo find /home/Automata -type f \( -name "*.log" -o -name "*.png" -o -name "*.py" -o -name "*.txt" \) -delete &&
         sudo rm -rf /home/Automata/.node-red &&
@@ -90,7 +102,7 @@ def run_uninstallation_steps():
         sudo rm -f /home/Automata/.npmrc &&
         sudo rm -f /home/Automata/.Xauthority &&
         sudo rm -f /home/Automata/.xsession-errors
-    """, 8, total_steps, "Removing log files, .png, .py, .txt, Node-RED related files, and additional directories/files...")
+    """, 10, total_steps, "Removing log files, .png, .py, .txt, Node-RED related files, and additional directories/files...")
 
     # Show final message after uninstallation
     show_uninstall_complete_message()
