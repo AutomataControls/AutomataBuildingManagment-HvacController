@@ -108,20 +108,19 @@ def install_palette_node(node, step, total_steps):
 
 # Run all installation steps in order
 def run_installation_steps():
-    total_steps = 39  # Adjusted for the additional Mosquitto setup step
+    total_steps = 40  # Adjusted for all steps including palette nodes
     step = 1
 
-    # Step 1: Copy splash.png from the repo directory to /home/Automata
+    # Step 1: Copy splash.png
     run_shell_command("cp /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/", step, total_steps, "Copying splash.png to /home/Automata...")
     sleep(3)
     step += 1
 
-    # Step 2: Navigate to /usr/share/plymouth/themes/pix/, move the original splash.png and copy the new one
+    # Step 2: Move and copy splash.png for Plymouth theme
     run_shell_command("cd /usr/share/plymouth/themes/pix/ && sudo mv splash.png splash.png.bk", step, total_steps, "Backing up original splash.png...")
     run_shell_command("sudo cp /home/Automata/splash.png /usr/share/plymouth/themes/pix/", step, total_steps, "Copying Automata splash.png to Plymouth theme...")
     sleep(3)
     step += 1
-    update_progress(step, total_steps, "Splash logo moved successful!")
 
     # Step 3: Set desktop background
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_background.sh", step, total_steps, "Setting desktop background...")
@@ -143,57 +142,50 @@ def run_installation_steps():
     sleep(5)
     step += 1
 
-    # New Step 7: Setup Mosquitto
+    # Step 7: Setup Mosquitto
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/setup_mosquitto.sh", step, total_steps, "Setting up Mosquitto MQTT broker...")
     sleep(5)
     step += 1
 
-    # Step 8: Clone Sequent Microsystems drivers
+    # Step 8-12: Clone Sequent Microsystems drivers
     boards_to_clone = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi", "8relind-rpi"]
     for board in boards_to_clone:
         run_shell_command(f"git clone https://github.com/sequentmicrosystems/{board}.git /home/Automata/AutomataBuildingManagment-HvacController/{board}", step, total_steps, f"Cloning {board}...")
-        update_progress(step, total_steps, f"Cloning {board} Success!")
         sleep(4)
         step += 1
 
-    # Step 9: Install Sequent Microsystems drivers
+    # Step 13-17: Install Sequent Microsystems drivers
     boards = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi", "8relind-rpi"]
     for board in boards:
         board_path = f"/home/Automata/AutomataBuildingManagment-HvacController/{board}"
         if os.path.isdir(board_path):
             run_shell_command(f"cd {board_path} && sudo make install", step, total_steps, f"Installing {board} driver from Repo Directory.")
-            update_progress(step, total_steps, f"Installed {board} driver successfully!")
-            step += 1
         else:
             update_progress(step, total_steps, f"Board {board} not found, skipping...")
-            step += 1
         sleep(5)
+        step += 1
 
-    # Step 10: Install Node-RED theme package and fix the missing theme issue
+    # Step 18: Create theme collection directory
     run_shell_command("mkdir -p /home/Automata/.node-red/node_modules/@node-red-contrib-themes/theme-collection/themes", step, total_steps, "Creating theme collection directory...")
     step += 1
 
-    # Step 11: Install Node-RED
+    # Step 19: Install Node-RED
     run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", step, total_steps, "Installing Node-RED... This could take some time.")
     sleep(5)
     step += 1
 
-    # Step 12: Configure Node-RED Security
+    # Step 20-22: Node-RED Security and Encryption
     update_progress(step, total_steps, "Node-RED Security Measures initiated...")
     sleep(5)
     step += 1
-
-    # Step 13: Setup Node-RED Encryption
     update_progress(step, total_steps, "Node-RED Encryption Finalizing...\n SSL and TLS Ready...")
     sleep(5)
     step += 1
-
-    # Step 14: Finalize Node-RED Authorization
     update_progress(step, total_steps, "Node-RED Authorization Credentials Hashed and Configured...\n Welcome Automata!")
     sleep(5)
     step += 1
 
-    # Step 15: Install Node-RED palette nodes
+    # Step 23-39: Install Node-RED palette nodes
     palette_nodes = [
         "node-red-contrib-ui-led",
         "node-red-dashboard",
@@ -217,40 +209,20 @@ def run_installation_steps():
         install_palette_node(node, step, total_steps)
         step += 1
 
-    # Step 16: Enable VNC
+    # Step 40: Final configurations
     run_shell_command("sudo raspi-config nonint do_vnc 0", step, total_steps, "Enabling Remote Access via RealVNC...")
-    sleep(5)
-    step += 1
-
-    # Step 17: Enable I2C
+    sleep(3)
     run_shell_command("sudo raspi-config nonint do_i2c 0", step, total_steps, "Enabling I2C Sensor Communication...")
-    sleep(5)
-    step += 1
-
-    # Step 18: Enable SPI
+    sleep(3)
     run_shell_command("sudo raspi-config nonint do_spi 0", step, total_steps, "Enabling SPI Sensor Communication...")
-    sleep(5)
-    step += 1
-
-    # Step 19: Enable 1-Wire
+    sleep(3)
     run_shell_command("sudo raspi-config nonint do_onewire 0", step, total_steps, "Enabling 1-Wire Data Communication...")
-    sleep(5)
-    step += 1
-
-    # Step 20: Disable screen blanking
+    sleep(3)
     run_shell_command("sudo raspi-config nonint do_blanking 1", step, total_steps, "Disabling screen blanking...")
-    sleep(5)
-    step += 1
-
-    # Step 21: Create UpdateSmBoards desktop icon
-    update_progress(step, total_steps, "Creating desktop icon for updating Sequent boards...")
+    sleep(3)
+    
     create_desktop_icon()
-    step += 1
-
-    # Step 22: Create a Node-RED desktop icon
-    update_progress(step, total_steps, "Creating desktop icon for Node-RED...")
     create_node_red_icon()
-    step += 1
 
     # Final Step: Installation complete
     update_progress(total_steps, total_steps, "Installation complete. Please reboot.")
