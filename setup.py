@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="automata-building-management",
-    version="1.0.2",
+    version="1.0.3",  # Incremented version number
     author="A. Jewell Sr",
     author_email="AutomataControls@Protonmail.com",
     description="Automata Building Management & HVAC Controller - Advanced IoT-driven solution for commercial and industrial applications",
@@ -31,6 +31,7 @@ setup(
         "matplotlib",   # For any plotting or visualization needs (optional)
     ],
     include_package_data=True,
+    py_modules=['run_automata_install'],  # Include the run_automata_install module
     scripts=[
         'AutomataControllerInstall.sh',
         'increase_swap_size.sh',
@@ -45,7 +46,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'automata-install=run_automata_install:main',  # Run the shell script through this entry point
+            'automata-install=run_automata_install:main',  # Updated entry point
         ],
     },
 )
