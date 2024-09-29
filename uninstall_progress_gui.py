@@ -44,7 +44,7 @@ def run_shell_command(command, step, total_steps, message):
     root.update_idletasks()
 
 def run_uninstallation_steps():
-    total_steps = 8  # Increased by 1 for the new step
+    total_steps = 8
 
     # Step 1: Stop and remove Mosquitto service and user credentials
     run_shell_command("sudo systemctl stop mosquitto && sudo systemctl disable mosquitto && sudo apt-get remove --purge -y mosquitto mosquitto-clients && sudo rm -f /etc/mosquitto/passwd && sudo rm -f /etc/mosquitto/mosquitto.conf", 1, total_steps, "Removing Mosquitto...")
@@ -75,14 +75,22 @@ def run_uninstallation_steps():
     # Step 7: Remove the cloned repository directory
     run_shell_command("sudo rm -rf /home/Automata/AutomataBuildingManagment-HvacController", 7, total_steps, "Removing repository directory...")
 
-    # Step 8 (New): Remove log files, .png, .py, .txt files, and all Node-RED related files
+    # Step 8 (Updated): Remove log files, .png, .py, .txt files, Node-RED related files, and additional directories/files
     run_shell_command("""
         sudo find /home/Automata -type f \( -name "*.log" -o -name "*.png" -o -name "*.py" -o -name "*.txt" \) -delete &&
         sudo rm -rf /home/Automata/.node-red &&
         sudo rm -rf /home/Automata/.npm &&
         sudo rm -rf /home/Automata/.cache/node-gyp &&
-        sudo rm -rf /home/Automata/.config/Node-RED
-    """, 8, total_steps, "Removing log files, .png, .py, .txt, and Node-RED related files...")
+        sudo rm -rf /home/Automata/.config/Node-RED &&
+        sudo rm -rf /home/Automata/.config &&
+        sudo rm -rf /home/Automata/.pki &&
+        sudo rm -rf /home/Automata/.vnc &&
+        sudo rm -rf /home/Automata/.cache &&
+        sudo rm -f /home/Automata/.bash_history &&
+        sudo rm -f /home/Automata/.npmrc &&
+        sudo rm -f /home/Automata/.Xauthority &&
+        sudo rm -f /home/Automata/.xsession-errors
+    """, 8, total_steps, "Removing log files, .png, .py, .txt, Node-RED related files, and additional directories/files...")
 
     # Show final message after uninstallation
     show_uninstall_complete_message()
