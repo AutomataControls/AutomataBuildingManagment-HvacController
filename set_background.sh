@@ -15,7 +15,7 @@ create_config_directories() {
 # Function to set the wallpaper
 set_wallpaper() {
     # Set the wallpaper using pcmanfm command and check for errors
-    DISPLAY=:0 pcmanfm --set-wallpaper="$IMAGE_PATH" --wallpaper-mode=crop &>/dev/null
+    DISPLAY=:0 pcmanfm --set-wallpaper="$IMAGE_PATH" --wallpaper-mode=fill &>/dev/null
     if [ $? -ne 0 ]; then
         echo "Error: Failed to set wallpaper using pcmanfm."
         return 1
