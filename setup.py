@@ -6,13 +6,18 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="automata-building-management",
-    version="1.0.0",
+    version="1.0.2",
     author="A. Jewell Sr",
-    author_email="your.email@example.com",
+    author_email="AutomataControls@gmail.com",
     description="Automata Building Management & HVAC Controller - Advanced IoT-driven solution for commercial and industrial applications",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/AutomataControls/AutomataBuildingManagment-HvacController",
+    project_urls={
+        "Documentation": "https://github.com/AutomataControls/AutomataBuildingManagment-HvacController/wiki",
+        "Source Code": "https://github.com/AutomataControls/AutomataBuildingManagment-HvacController",
+        "PyPI": "https://pypi.org/project/automata-building-management/"
+    },
     packages=find_packages(),
     classifiers=[
         "Development Status :: 5 - Production/Stable",
@@ -34,6 +39,7 @@ setup(
         # Define the directories and file types to be included in the package
         'automata': [
             'data/*',              # Include all files in 'data' directory
+            'Flow_Chart/*',              # Include all files in 'data' directory
             'NodeRedLogic/*.json', # Include all JSON files in 'NodeRedLogic' directory
         ],
     },

@@ -2,9 +2,13 @@
 
 ## Advanced IoT-driven, Scalable, and Energy-Efficient Solution for Commercial and Industrial Applications
 
-![Automata Logo](splash.png)
+![Automata Logo](https://github.com/AutomataControls/AutomataBuildingManagment-HvacController/raw/main/splash.png)
 
 ---
+![PyPI Version](https://img.shields.io/pypi/v/automata-building-management)
+![PyPI Downloads](https://img.shields.io/pypi/dm/automata-building-management)
+![License](https://img.shields.io/pypi/l/automata-building-management)
+![Python Version](https://img.shields.io/pypi/pyversions/automata-building-management)
 
 ## Table of Contents
 1. [Executive Summary](#executive-summary)
