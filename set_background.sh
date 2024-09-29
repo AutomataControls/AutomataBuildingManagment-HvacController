@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Path to the image
-IMAGE_PATH="/home/Automata/AutomataControls-AutomataBuildingManagment-HvacController/splash.png"
+IMAGE_PATH="/home/Automata/splash.png"
 
 # Function to create configuration directories if they don't exist
 create_config_directories() {
@@ -15,7 +15,7 @@ create_config_directories() {
 # Function to set the wallpaper
 set_wallpaper() {
     # Set the wallpaper using pcmanfm command and check for errors
-    DISPLAY=:0 pcmanfm --set-wallpaper="$IMAGE_PATH" --wallpaper-mode=stretch &>/dev/null
+    DISPLAY=:0 pcmanfm --set-wallpaper="$IMAGE_PATH" --wallpaper-mode=fill &>/dev/null
     if [ $? -ne 0 ]; then
         echo "Error: Failed to set wallpaper using pcmanfm."
         return 1
