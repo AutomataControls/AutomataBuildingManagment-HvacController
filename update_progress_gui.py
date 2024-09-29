@@ -1,4 +1,8 @@
+#!/bin/bash
 
+# Create Python GUI for board update progress
+UPDATE_GUI="/home/Automata/update_progress_gui.py"
+cat << 'EOF' > $UPDATE_GUI
 import tkinter as tk
 from tkinter import ttk
 import subprocess
@@ -55,7 +59,6 @@ def run_update_steps():
         "/home/Automata/AutomataBuildingManagment-HvacController/16relind-rpi/update",
         "/home/Automata/AutomataBuildingManagment-HvacController/8relind-rpi/update"
     ]
-
     step = 2
     for board in boards:
         if os.path.isdir(board):
@@ -88,3 +91,10 @@ threading.Thread(target=run_update_steps).start()
 
 # Tkinter loop runs in the background while updates are processed
 root.mainloop()
+EOF
+
+# Ensure the Python script has execute permissions
+chmod +x $UPDATE_GUI
+
+# Run the Python GUI script
+python3 $UPDATE_GUI
