@@ -23,11 +23,6 @@ echo "allow_anonymous false" | sudo tee -a /etc/mosquitto/mosquitto.conf
 echo "password_file /etc/mosquitto/passwd" | sudo tee -a /etc/mosquitto/mosquitto.conf
 echo "per_listener_settings true" | sudo tee -a /etc/mosquitto/mosquitto.conf
 
-# Enable Mosquitto as a service and restart it
-echo "Enabling and restarting Mosquitto service..."
-sudo systemctl enable mosquitto
-sudo systemctl restart mosquitto
-
 # Output status to verify Mosquitto is running
 echo "Checking Mosquitto status..."
 sudo systemctl status mosquitto
