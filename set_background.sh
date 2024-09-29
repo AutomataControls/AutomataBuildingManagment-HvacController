@@ -5,21 +5,40 @@ IMAGE_PATH="/home/Automata/AutomataControls-AutomataBuildingManagment-HvacContro
 
 # Function to set the wallpaper
 set_wallpaper() {
-    # Ensure that pcmanfm is active by checking for desktop manager status
+    # Ensure the DISPLAY variable is set
+    export DISPLAY=:0
+
+    # Check if pcmanfm is running
     if pgrep -x "pcmanfm" > /dev/null; then
-        # Set the wallpaper using pcmanfm
+        echo "pcmanfm is running. Setting wallpaper using pcmanfm."
+
+        # Set the wallpaper using pcmanfm for both LXDE and LXDE-pi profiles
         DISPLAY=:0 pcmanfm --set-wallpaper="$IMAGE_PATH" --wallpaper-mode=crop
 
-        # Update the desktop configuration file
-        CONFIG_FILE="$HOME/.config/pcmanfm/LXDE-pi/desktop-items-0.conf"
-        sed -i "s|wallpaper=.*|wallpaper=$IMAGE_PATH|g" "$CONFIG_FILE"
-        sed -i "s|wallpaper_mode=.*|wallpaper_mode=crop|g" "$CONFIG_FILE"
+        # Update the desktop configuration files
+        for CONFIG_DIR in "$HOME/.config/pcmanfm/LXDE" "$HOME/.config/pcmanfm/LXDE-pi"; do
+            CONFIG_FILE="$CONFIG_DIR/desktop-items-0.conf"
+            if [ -f "$CONFIG_FILE" ]; then
+                sed -i "s|wallpaper=.*|wallpaper=$IMAGE_PATH|g" "$CONFIG_FILE"
+                sed -i "s|wallpaper_mode=.*|wallpaper_mode=crop|g" "$CONFIG_FILE"
+                echo "Updated wallpaper configuration in $CONFIG_FILE"
+            else
+                echo "Configuration file $CONFIG_FILE not found, skipping..."
+            fi
+        done
 
-        echo "Wallpaper set to $IMAGE_PATH successfully." | tee -a "$HOME/wallpaper_set.log"
     else
-        echo "Error: Desktop manager is not active or pcmanfm is not running." | tee -a "$HOME/wallpaper_set.log"
-        exit 1
+        echo "pcmanfm is not running. Trying to start pcmanfm as desktop manager."
+        # Try to start pcmanfm as the desktop manager
+        DISPLAY=:0 pcmanfm --desktop &
+        sleep 5
+
+        # Set the wallpaper again after starting pcmanfm
+        DISPLAY=:0 pcmanfm --set-wallpaper="$IMAGE_PATH" --wallpaper-mode=crop
     fi
+
+    # Log the result
+    echo "Wallpaper set to $IMAGE_PATH at $(date)" | tee -a "$HOME/wallpaper_set.log"
 }
 
 # Wait for the desktop environment to fully load (adjust the sleep time if needed)
