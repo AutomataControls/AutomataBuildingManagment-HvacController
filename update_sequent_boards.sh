@@ -15,9 +15,13 @@ def update_progress(step, total_steps, message):
     status_label.config(text=message)
     root.update_idletasks()
 
-def run_shell_command(command, step, total_steps, message):
+def run_shell_command(command, step, total_steps, message, cwd=None):
     update_progress(step, total_steps, message)
-    result = subprocess.run(command, shell=True, text=True, capture_output=True)
+    print(f"Running command: {command} in directory: {cwd}")  # Debug information
+    result = subprocess.run(command, shell=True, text=True, capture_output=True, cwd=cwd)
+    print(f"Command result: {result.stdout}")  # Print stdout of command
+    print(f"Command error (if any): {result.stderr}")  # Print stderr of command
+    print(f"Command return code: {result.returncode}")  # Print return code of command
     if result.returncode != 0:
         print(f"Error during {message}: {result.stderr}")
     else:
@@ -64,17 +68,19 @@ def run_update_steps():
     ]
 
     for board in boards:
-        board_update_script = f"/home/Automata/AutomataBuildingManagment-HvacController/{board}/update/update"
+        board_dir = f"/home/Automata/AutomataBuildingManagment-HvacController/{board}/update"
+        board_update_script = f"{board_dir}/update"
+        
         if os.path.isfile(board_update_script):
             update_progress(step, total_steps, f"Setting executable permissions for {board} update script...")
-            run_shell_command(f"sudo chmod +x {board_update_script}", step, total_steps, f"Setting executable permissions for {board}...")
+            run_shell_command(f"chmod +x {board_update_script} && chown Automata:Automata {board_update_script}", step, total_steps, f"Setting executable permissions for {board} update script...")
 
             # Fetch CPU ID and display it in the GUI
             cpuid = get_cpuid(f"/home/Automata/AutomataBuildingManagment-HvacController/{board}")
             update_progress(step, total_steps, f"Updating {board} (CPU ID: {cpuid})...")
 
-            # Change directory and run the update script directly
-            result = run_shell_command(f"cd /home/Automata/AutomataBuildingManagment-HvacController/{board}/update && sudo ./update 0", step, total_steps, f"Running update for {board}...")
+            # Change directory and run the update script directly using cwd
+            result = run_shell_command("./update 0", step, total_steps, f"Running update for {board}...", cwd=board_dir)
 
             if result.returncode == 0:
                 success = True
@@ -129,42 +135,7 @@ WantedBy=multi-user.target
     sleep(2)
     step += 1
 
-    # Step 12: Create a desktop icon to open Node-RED UI pages
-    update_progress(step, total_steps, "Creating a desktop icon for Node-RED UI pages...")
-    desktop_icon_content = '''
-[Desktop Entry]
-Name=Open Node-RED UI
-Comment=Launch Node-RED interface
-Exec=/home/Automata/open_node_red.sh
-Icon=/home/Automata/AutomataBuildingManagment-HvacController/NodeRedLogo.png
-Terminal=false
-Type=Application
-Categories=Utility;
-    '''
-    with open('/home/Automata/Desktop/OpenNodeRedUI.desktop', 'w') as f:
-        f.write(desktop_icon_content)
-    
-    # Set the correct permissions and ownership for the icon
-    run_shell_command("chmod +x /home/Automata/Desktop/OpenNodeRedUI.desktop && chown Automata:Automata /home/Automata/Desktop/OpenNodeRedUI.desktop", step, total_steps, "Setting permissions for Node-RED desktop icon")
-    sleep(2)
-    step += 1
-
-    # Step 13: Create shell script to open Node-RED UI pages
-    update_progress(step, total_steps, "Creating shell script to open Node-RED UI pages...")
-    node_red_script_content = '''
-#!/bin/bash
-xdg-open http://127.0.0.1:1880/
-xdg-open http://127.0.0.1:1880/ui
-    '''
-    with open('/home/Automata/open_node_red.sh', 'w') as f:
-        f.write(node_red_script_content)
-
-    # Set permissions for the shell script
-    run_shell_command("chmod +x /home/Automata/open_node_red.sh", step, total_steps, "Setting permissions for Node-RED shell script")
-    sleep(2)
-    step += 1
-
-    # Step 14: Final step - prompt for reboot
+    # Step 12: Final step - prompt for reboot
     if success:
         update_progress(step, total_steps, "Board update succeeded. Please reboot.")
     else:
