@@ -7,164 +7,150 @@ import tkinter as tk
 from tkinter import ttk
 import subprocess
 import threading
-import os
+import re
+import os  # Ensure this import is present
 from time import sleep
 
 def update_progress(step, total_steps, message):
+    """Update the progress bar and show a status message."""
     progress['value'] = (step / total_steps) * 100
     status_label.config(text=message)
     root.update_idletasks()
+    sleep(3)  # Delay to make each step visible
 
-def run_shell_command(command, step, total_steps, message, cwd=None):
-    update_progress(step, total_steps, message)
-    print(f"Running command: {command} in directory: {cwd}")  # Debug information
-    result = subprocess.run(command, shell=True, text=True, capture_output=True, cwd=cwd)
-    print(f"Command result: {result.stdout}")  # Print stdout of command
-    print(f"Command error (if any): {result.stderr}")  # Print stderr of command
-    print(f"Command return code: {result.returncode}")  # Print return code of command
-    if result.returncode != 0:
-        print(f"Error during {message}: {result.stderr}")
-    else:
-        print(f"{message} completed successfully.")
-    return result
+def stream_output(process, step, total_steps):
+    """Stream the output of the update command and capture CPU ID and version."""
+    cpu_id = "Unknown"
+    version = "Unknown"
 
-def get_cpuid(board_path):
-    cpuid_file = os.path.join(board_path, "update", "cpuid")
+    while True:
+        output = process.stdout.readline()
+        if output:
+            print(output.strip())  # Debug print in the terminal
+            root.update_idletasks()
+
+            # Extract CPU ID and version from output using regex
+            cpu_match = re.search(r"CPUID:\s*(\S+)", output)
+            version_match = re.search(r"Board version\s*>?=\s*(\S+)", output)
+
+            if cpu_match:
+                cpu_id = cpu_match.group(1)
+                update_progress(step, total_steps, f"Updating... CPU ID: {cpu_id}")
+
+            if version_match:
+                version = version_match.group(1)
+                update_progress(step, total_steps, f"Board version: {version}")
+
+        elif process.poll() is not None:
+            break
+
+def run_interactive_update(board_dir, step, total_steps):
+    """Run the update script with real-time progress updates."""
     try:
-        if os.path.exists(cpuid_file):
-            with open(cpuid_file, "r") as f:
-                cpuid = f.read().strip()
-            if cpuid:
-                return cpuid
-            else:
-                return "CPU ID not found"
+        update_progress(step, total_steps, f"Starting update for {board_dir}...")
+        process = subprocess.Popen(
+            ["sudo", "./update", "0"],
+            cwd=board_dir,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True
+        )
+        process.stdin.write("yes\n")
+        process.stdin.flush()
+
+        stream_output(process, step, total_steps)
+
+        if process.returncode == 0:
+            update_progress(step, total_steps, f"Successfully updated {board_dir}.")
         else:
-            return "CPU ID file missing"
+            update_progress(step, total_steps, f"Update failed for {board_dir}.")
     except Exception as e:
-        return f"Error retrieving CPU ID: {str(e)}"
+        update_progress(step, total_steps, f"Error updating {board_dir}: {str(e)}")
+
+def run_shell_command(command, step, total_steps, message):
+    """Run a shell command, update progress, and return the result."""
+    update_progress(step, total_steps, message)
+    result = subprocess.run(command, shell=True, text=True, capture_output=True)
+    if result.stderr:
+        print(result.stderr)
+    return result  # Ensure the result is returned
+
+def enable_and_restart_mosquitto(step, total_steps):
+    """Enable and restart Mosquitto with error checking."""
+    update_progress(step, total_steps, "Enabling Mosquitto service...")
+    enable_result = run_shell_command("sudo systemctl enable mosquitto.service", step, total_steps, "Enabling Mosquitto")
+
+    if enable_result and enable_result.returncode == 0:
+        update_progress(step, total_steps, "Restarting Mosquitto...")
+        restart_result = run_shell_command("sudo systemctl restart mosquitto.service", step, total_steps, "Restarting Mosquitto")
+
+        if restart_result.returncode != 0:
+            update_progress(step, total_steps, "Failed to restart Mosquitto. Check status manually.")
+    else:
+        update_progress(step, total_steps, "Failed to enable Mosquitto service.")
 
 def run_update_steps():
-    total_steps = 14  # Adjusted total steps to include new steps
-    success = False
+    total_steps = 14  # Adjusted total steps
 
-    # Step 1: Kill all related services (Mosquitto, Node-RED, launch_chromium)
-    update_progress(1, total_steps, "Stopping related services...")
-    run_shell_command("sudo systemctl stop mosquitto.service nodered.service chromium-launch.service", 1, total_steps, "Stopping Mosquitto, Node-RED, and Chromium services")
-    sleep(2)
+    # Step 1: Stop services
+    update_progress(1, total_steps, "Stopping services...")
+    run_shell_command("sudo systemctl stop mosquitto.service nodered.service chromium-launch.service", 1, total_steps, "Stopping services")
 
-    # Step 2: Disable Node-RED and launch_chromium services
+    # Step 2: Disable services
     update_progress(2, total_steps, "Disabling Node-RED and Chromium services...")
-    run_shell_command("sudo systemctl disable nodered.service chromium-launch.service", 2, total_steps, "Disabling Node-RED and Chromium services")
-    sleep(2)
+    run_shell_command("sudo systemctl disable nodered.service chromium-launch.service", 2, total_steps, "Disabling services")
 
-    step = 3  # Continue from here after services are stopped
+    step = 3
 
     # Step 3-7: Board update process
-    boards = [
-        "megabas-rpi",
-        "megaind-rpi",
-        "16univin-rpi",
-        "16relind-rpi"
-    ]
-
+    boards = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi"]
     for board in boards:
         board_dir = f"/home/Automata/AutomataBuildingManagment-HvacController/{board}/update"
-        board_update_script = f"{board_dir}/update"
-        
-        if os.path.isfile(board_update_script):
-            update_progress(step, total_steps, f"Setting executable permissions for {board} update script...")
-            run_shell_command(f"chmod +x {board_update_script} && chown Automata:Automata {board_update_script}", step, total_steps, f"Setting executable permissions for {board} update script...")
+        if os.path.isfile(f"{board_dir}/update"):
+            update_progress(step, total_steps, f"Setting permissions for {board}...")
+            run_shell_command(f"sudo chmod +x {board_dir}/update && sudo chown Automata:Automata {board_dir}/update", step, total_steps, f"Setting permissions for {board}")
 
-            # Fetch CPU ID and display it in the GUI
-            cpuid = get_cpuid(f"/home/Automata/AutomataBuildingManagment-HvacController/{board}")
-            update_progress(step, total_steps, f"Updating {board} (CPU ID: {cpuid})...")
-
-            # Change directory and run the update script directly using cwd
-            result = run_shell_command("./update 0", step, total_steps, f"Running update for {board}...", cwd=board_dir)
-
-            if result.returncode == 0:
-                success = True
-                print(f"Successfully updated {board}")
-            else:
-                print(f"Failed to update {board}: {result.stderr}")
+            run_interactive_update(board_dir, step, total_steps)
             step += 1
         else:
-            print(f"Board update script {board_update_script} not found.")
+            update_progress(step, total_steps, f"Update script not found for {board}.")
             step += 1
 
-    # Step 8: Re-enable services
-    update_progress(step, total_steps, "Re-enabling Node-RED and Chromium services...")
-    run_shell_command("sudo systemctl enable nodered.service chromium-launch.service", step, total_steps, "Re-enabling Node-RED and Chromium services")
-    sleep(2)
-    step += 1
+    # Step 8: Re-enable Node-RED and Chromium
+    update_progress(step, total_steps, "Re-enabling services...")
+    run_shell_command("sudo systemctl enable nodered.service chromium-launch.service", step, total_steps, "Re-enabling services")
 
-    # Step 9: Set permissions for launch_chromium.py
-    update_progress(step, total_steps, "Setting ownership and permissions for launch_chromium.py...")
-    run_shell_command("sudo chown Automata:Automata /home/Automata/launch_chromium.py && sudo chmod +x /home/Automata/launch_chromium.py", step, total_steps, "Setting ownership and permissions for launch_chromium.py")
-    sleep(2)
-    step += 1
+    # Step 9: Enable and restart Mosquitto
+    enable_and_restart_mosquitto(step, total_steps)
 
-    # Step 10: Create a systemd service to launch Chromium at boot
-    update_progress(step, total_steps, "Creating a systemd service for Chromium auto-launch...")
-    chromium_service = '''
-[Unit]
-Description=Auto-launch Chromium at boot after network is up
-After=network.target
+    # Step 10: Start Node-RED with max-old-space-size=2048
+    update_progress(step, total_steps, "Starting Node-RED with increased memory...")
+    run_shell_command("node-red-start --max-old-space-size=2048", step, total_steps, "Starting Node-RED")
 
-[Service]
-ExecStart=/usr/bin/chromium-browser --new-window http://127.0.0.1:1880/ http://127.0.0.1:1880/ui
-User=Automata
-Environment=DISPLAY=:0
-Restart=on-failure
+    # Step 11: Launch Chromium
+    update_progress(step, total_steps, "Launching Chromium...")
+    run_shell_command("sudo systemctl start chromium-launch.service && sudo systemctl daemon-reload", step, total_steps, "Launching Chromium")
 
-[Install]
-WantedBy=multi-user.target
-    '''
-    with open('/home/Automata/chromium-launch.service', 'w') as f:
-        f.write(chromium_service)
-
-    # Move the file to the systemd directory with elevated permissions
-    run_shell_command("sudo mv /home/Automata/chromium-launch.service /etc/systemd/system/", step, total_steps, "Moving Chromium service to systemd directory")
-    run_shell_command("sudo systemctl enable chromium-launch.service", step, total_steps, "Enabling Chromium auto-launch service")
-    sleep(2)
-    step += 1
-
-    # Step 11: Restart all services and reload daemons
-    update_progress(step, total_steps, "Restarting Mosquitto, Node-RED, Chromium services, and reloading daemons...")
-    run_shell_command("sudo systemctl start mosquitto.service nodered.service chromium-launch.service && sudo systemctl daemon-reload", step, total_steps, "Restarting all services and reloading daemons")
-    sleep(2)
-    step += 1
-
-    # Step 12: Final step - prompt for reboot
-    if success:
-        update_progress(step, total_steps, "Board update succeeded. Please reboot.")
-    else:
-        update_progress(total_steps, total_steps, "Board update failed.")
-        print("No boards were updated successfully.")
-
+    update_progress(step, total_steps, "Update complete. Please reboot.")
     show_reboot_prompt()
 
 def show_reboot_prompt():
+    """Display a prompt to reboot the system."""
     root.withdraw()
     final_window = tk.Tk()
-    final_window.title("Board Firmware Update Complete")
+    final_window.title("Update Complete")
     final_window.geometry("600x400")
     final_window.configure(bg='#2e2e2e')
 
-    final_label = tk.Label(final_window, text="Board Firmware Update Complete", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
-    final_label.pack(pady=20)
-
-    final_message = tk.Label(final_window, text="Please reboot to finalize the firmware update.\n\nReboot now?", font=("Helvetica", 14), fg="orange", bg="#2e2e2e")
-    final_message.pack(pady=20)
+    tk.Label(final_window, text="Update Complete", font=("Helvetica", 18), fg="#00b3b3", bg="#2e2e2e").pack(pady=20)
+    tk.Label(final_window, text="Please reboot to finalize the update.", font=("Helvetica", 14), fg="orange", bg="#2e2e2e").pack(pady=20)
 
     button_frame = tk.Frame(final_window, bg='#2e2e2e')
     button_frame.pack(pady=20)
 
-    reboot_button = tk.Button(button_frame, text="Yes", font=("Helvetica", 12), command=lambda: os.system('sudo reboot'), bg='#00b3b3', fg="black", width=10)
-    reboot_button.grid(row=0, column=0, padx=10)
-
-    exit_button = tk.Button(button_frame, text="No", font=("Helvetica", 12), command=final_window.destroy, bg='orange', fg="black", width=10)
-    exit_button.grid(row=0, column=1, padx=10)
+    tk.Button(button_frame, text="Yes", font=("Helvetica", 12), command=lambda: os.system('sudo reboot'), bg='#00b3b3', fg="black", width=10).grid(row=0, column=0, padx=10)
+    tk.Button(button_frame, text="No", font=("Helvetica", 12), command=final_window.destroy, bg='orange', fg="black", width=10).grid(row=0, column=1, padx=10)
 
     final_window.mainloop()
 
@@ -173,8 +159,7 @@ root.title("Automata Board Updates")
 root.geometry("600x400")
 root.configure(bg='#2e2e2e')
 
-label = tk.Label(root, text="Automata Board Updates", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
-label.pack(pady=20)
+tk.Label(root, text="Automata Board Updates", font=("Helvetica", 18), fg="#00b3b3", bg="#2e2e2e").pack(pady=20)
 
 progress = ttk.Progressbar(root, orient="horizontal", length=500, mode="determinate")
 progress.pack(pady=20)
