@@ -26,6 +26,8 @@ def run_command_with_timeout(command, timeout=30):
     """Run a command with a timeout to prevent hanging."""
     try:
         result = subprocess.run(command, shell=True, text=True, capture_output=True, timeout=timeout)
+        print(f"Command output: {result.stdout}")
+        print(f"Command error: {result.stderr}")
         return result
     except subprocess.TimeoutExpired:
         print(f"Command '{command}' timed out.")
@@ -69,12 +71,13 @@ def run_interactive_update(board_dir, step, total_steps):
     try:
         update_progress(step, total_steps, f"Starting update for {board_name}...")
         process = subprocess.Popen(
-            "yes | sudo ./update 0",
+            f"echo 'yes' | sudo ./update 0",
             cwd=board_dir,
             shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            text=True
+            text=True,
+            executable='/bin/bash'
         )
 
         bootloader_warning = stream_output(process, step, total_steps)
@@ -87,15 +90,9 @@ def run_interactive_update(board_dir, step, total_steps):
         update_progress(step, total_steps, f"Error updating {board_name}: {str(e)}")
 
 def run_update_steps():
-    total_steps = 12
+    total_steps = 8  # Adjusted for removed steps
 
-    update_progress(1, total_steps, "Stopping services...")
-    run_command_with_timeout("sudo systemctl stop mosquitto.service nodered.service chromium-launch.service", 30)
-
-    update_progress(2, total_steps, "Disabling services...")
-    run_command_with_timeout("sudo systemctl disable nodered.service chromium-launch.service", 30)
-
-    step = 3
+    step = 1
 
     boards = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi"]
     for board in boards:
@@ -118,14 +115,12 @@ def run_update_steps():
         run_interactive_update(board_dir, step, total_steps)
         step += 1
 
-    update_progress(step, total_steps, "Enabling services...")
-    run_command_with_timeout("sudo systemctl enable nodered.service chromium-launch.service", 30)
-
-    update_progress(step, total_steps, "Starting Node-RED with increased memory...")
-    run_command_with_timeout("node-red-pi --max-old-space-size=2048", 30)
-
-    update_progress(step, total_steps, "Launching Chromium...")
-    run_command_with_timeout("sudo systemctl start chromium-launch.service && sudo systemctl daemon-reload", 30)
+    update_progress(step, total_steps, "Starting Node-RED...")
+    result = run_command_with_timeout("sudo systemctl start nodered.service", 30)
+    if result and result.returncode == 0:
+        update_progress(step, total_steps, "Node-RED started successfully.")
+    else:
+        update_progress(step, total_steps, "Failed to start Node-RED. Check system logs.")
 
     update_progress(step, total_steps, "Update complete. Please reboot.")
     show_reboot_prompt()
