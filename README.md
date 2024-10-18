@@ -1,25 +1,26 @@
+
 # Automata Building Automation Controller
 
 ![Automata Logo](https://github.com/AutomataControls/AutomataBuildingManagment-HvacController/blob/main/splash.png?raw=true)
 
 ---
 
-![PyPI Version](https://img.shields.io/pypi/v/automata-building-management)
-![PyPI Downloads](https://img.shields.io/pypi/dm/automata-building-management)
-![License](https://img.shields.io/pypi/l/automata-building-management)
-![Python Version](https://img.shields.io/pypi/pyversions/automata-building-management)
+![Version](https://img.shields.io/badge/version-1.0.0-darkgrey?style=flat-square)
+![Teal Badge](https://img.shields.io/badge/status-active-teal?style=flat-square)
+![License](https://img.shields.io/badge/license-MIT-darkorange?style=flat-square)
+![Python](https://img.shields.io/badge/python-3.8%2B-teal?style=flat-square)
 
 ---
 
-## Executive Summary
+<h2 style="color: teal;">Executive Summary</h2>
 
-Automata Building Management & HVAC Controller is an advanced IoT-driven, scalable, and energy-efficient solution designed for commercial and industrial applications. The controller provides intelligent HVAC management, lighting control, energy optimization, and predictive maintenance features, all within a user-friendly interface and scalable architecture.
+<p style="color: darkorange;">Automata Building Management & HVAC Controller is an advanced IoT-driven, scalable, and energy-efficient solution designed for commercial and industrial applications. The controller provides intelligent HVAC management, lighting control, energy optimization, and predictive maintenance features, all within a user-friendly interface and scalable architecture.</p>
 
 The solution allows for real-time monitoring, data collection, and system control, making it an ideal choice for facility managers and building automation professionals.
 
 ---
 
-## Table of Contents
+## <span style="color: teal;">Table of Contents</span>
 
 1. [Executive Summary](#executive-summary)
 2. [Key Features](#key-features)
@@ -42,7 +43,7 @@ The solution allows for real-time monitoring, data collection, and system contro
 
 ---
 
-## Key Features
+## <span style="color: teal;">Key Features</span>
 
 1. **Intelligent HVAC Management**
    - Predictive temperature control based on occupancy patterns and weather forecasts
@@ -78,7 +79,7 @@ The solution allows for real-time monitoring, data collection, and system contro
 
 ---
 
-## Installation
+## <span style="color: teal;">Installation</span>
 
 ### Prerequisites
 
@@ -92,3 +93,51 @@ The solution allows for real-time monitoring, data collection, and system contro
 
    ```bash
    git clone https://github.com/AutomataControls/AutomataBuildingManagment-HvacController.git
+   ```
+
+---
+
+## <span style="color: teal;">Acknowledgments</span>
+
+This project utilizes several open-source tools and libraries. We would like to acknowledge the following projects and their contributors:
+
+### Core Components
+- [Node-RED](https://nodered.org/) - A programming tool for wiring together hardware devices, APIs, and online services.
+- [Mosquitto](https://mosquitto.org/) - An open-source MQTT broker.
+
+### Sequent Microsystems Drivers
+- [megabas-rpi](https://github.com/sequentmicrosystems/megabas-rpi)
+- [megaind-rpi](https://github.com/sequentmicrosystems/megaind-rpi)
+- [16univin-rpi](https://github.com/sequentmicrosystems/16univin-rpi)
+- [16relind-rpi](https://github.com/sequentmicrosystems/16relind-rpi)
+- [8relind-rpi](https://github.com/sequentmicrosystems/8relind-rpi)
+
+### Node-RED Nodes and Packages
+- "node-red-contrib-ui-led"
+- "node-red-dashboard"
+- "node-red-contrib-sm-16inpind"
+- "node-red-contrib-sm-16relind"
+- "node-red-contrib-sm-8inputs"
+- "node-red-contrib-sm-8relind"
+- "node-red-contrib-sm-bas"
+- "node-red-contrib-sm-ind"
+- "node-red-node-openweathermap"
+- "node-red-contrib-influxdb"
+- "node-red-node-email"
+- "node-red-contrib-boolean-logic-ultimate"
+- "node-red-contrib-cpu"
+- "node-red-contrib-bme280-rpi"
+- "node-red-contrib-bme280"
+- "node-red-node-aws33"
+- "@node-red-contrib-themes/theme-collection" # Added theme collection
+
+We would like to express our gratitude to **Current Mechanical** for the Freedom to Dream and Develop. Their support has made this project possible, inspiring us to explore innovative solutions in building automation and IoT systems.
+
+We are grateful to the developers and contributors of these projects for their valuable work.
+
+---
+
+## <span style="color: teal;">License</span>
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
