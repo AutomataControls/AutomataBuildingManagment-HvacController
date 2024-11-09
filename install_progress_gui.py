@@ -10,7 +10,17 @@ from time import sleep
 # Create the main window
 root = tk.Tk()
 root.title("Automata Installation Progress")
-root.geometry("600x400")
+window_width = 700
+window_height = 500
+
+# Get screen dimensions and calculate the center position
+screen_width = root.winfo_screenwidth()
+screen_height = root.winfo_screenheight()
+center_x = (screen_width - window_width) // 2
+center_y = (screen_height - window_height) // 2
+
+# Set the window size and position
+root.geometry(f"{window_width}x{window_height}+{center_x}+{center_y}")
 root.configure(bg='#2e2e2e')
 
 # Title message
@@ -62,7 +72,7 @@ def run_shell_command(command, step, total_steps, message):
 def create_desktop_icon():
     desktop_file = "/home/Automata/Desktop/UpdateSmBoards.desktop"
     icon_script = "/home/Automata/AutomataBuildingManagment-HvacController/update_sequent_boards.sh"
-    icon_image = "/home/Automata/AutomataBuildingManagment-HvacController/splash.png"  # Path to splash.png
+    icon_image = "/home/Automata/AutomataBuildingManagment-HvacController/splash.png"
     icon_content = f"""[Desktop Entry]
 Name=Update Sequent Boards
 Comment=Run the Sequent Board Update Script
@@ -108,7 +118,7 @@ def install_palette_node(node, step, total_steps):
 
 # Run all installation steps in order
 def run_installation_steps():
-    total_steps = 40  # Adjusted for all steps including palette nodes
+    total_steps = 40
     step = 1
 
     # Step 1: Copy splash.png
@@ -122,38 +132,6 @@ def run_installation_steps():
     sleep(3)
     step += 1
 
-    # Step 3: Set desktop background
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_background.sh", step, total_steps, "Setting desktop background...")
-    sleep(3)
-    step += 1
-
-    # Step 4: Overclock the Raspberry Pi
-    run_shell_command("echo -e 'over_voltage=2\narm_freq=1750' | sudo tee -a /boot/config.txt", step, total_steps, "Overclocking CPU...Turbo mode engaged!")
-    sleep(5)
-    step += 1
-
-    # Step 5: Set Internet Time
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_internet_time_rpi4.sh", step, total_steps, "Setting internet time to Eastern Standard...")
-    sleep(5)
-    step += 1
-
-    # Step 6: Increase swap size
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh", step, total_steps, "Increasing swap size...")
-    sleep(5)
-    step += 1
-
-    # Step 7: Setup Mosquitto
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/setup_mosquitto.sh", step, total_steps, "Setting up Mosquitto MQTT broker...")
-    sleep(5)
-    step += 1
-
-    # Step 8-12: Clone Sequent Microsystems drivers
-    boards_to_clone = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi", "8relind-rpi"]
-    for board in boards_to_clone:
-        run_shell_command(f"git clone https://github.com/sequentmicrosystems/{board}.git /home/Automata/AutomataBuildingManagment-HvacController/{board}", step, total_steps, f"Cloning {board}...")
-        sleep(4)
-        step += 1
-
     # Step 13-17: Install Sequent Microsystems drivers
     boards = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi", "8relind-rpi"]
     for board in boards:
@@ -165,65 +143,6 @@ def run_installation_steps():
         sleep(5)
         step += 1
 
-    # Step 18: Create theme collection directory
-    run_shell_command("mkdir -p /home/Automata/.node-red/node_modules/@node-red-contrib-themes/theme-collection/themes", step, total_steps, "Creating theme collection directory...")
-    step += 1
-
-    # Step 19: Install Node-RED
-    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", step, total_steps, "Installing Node-RED... This could take some time.")
-    sleep(5)
-    step += 1
-
-    # Step 20-22: Node-RED Security and Encryption
-    update_progress(step, total_steps, "Node-RED Security Measures initiated...")
-    sleep(5)
-    step += 1
-    update_progress(step, total_steps, "Node-RED Encryption Finalizing...\n SSL and TLS Ready...")
-    sleep(5)
-    step += 1
-    update_progress(step, total_steps, "Node-RED Authorization Credentials Hashed and Configured...\n Welcome Automata!")
-    sleep(5)
-    step += 1
-
-    # Step 23-39: Install Node-RED palette nodes
-    palette_nodes = [
-        "node-red-contrib-ui-led",
-        "node-red-dashboard",
-        "node-red-contrib-sm-16inpind",
-        "node-red-contrib-sm-16relind",
-        "node-red-contrib-sm-8inputs",
-        "node-red-contrib-sm-8relind",
-        "node-red-contrib-sm-bas",
-        "node-red-contrib-sm-ind",
-        "node-red-node-openweathermap",
-        "node-red-contrib-influxdb",
-        "node-red-node-email",
-        "node-red-contrib-boolean-logic-ultimate",
-        "node-red-contrib-cpu",
-        "node-red-contrib-bme280-rpi",
-        "node-red-contrib-bme280",
-        "node-red-node-aws",
-        "@node-red-contrib-themes/theme-collection"
-    ]
-    for node in palette_nodes:
-        install_palette_node(node, step, total_steps)
-        step += 1
-
-    # Step 40: Final configurations
-    run_shell_command("sudo raspi-config nonint do_vnc 0", step, total_steps, "Enabling Remote Access via RealVNC...")
-    sleep(3)
-    run_shell_command("sudo raspi-config nonint do_i2c 0", step, total_steps, "Enabling I2C Sensor Communication...")
-    sleep(3)
-    run_shell_command("sudo raspi-config nonint do_spi 0", step, total_steps, "Enabling SPI Sensor Communication...")
-    sleep(3)
-    run_shell_command("sudo raspi-config nonint do_onewire 0", step, total_steps, "Enabling 1-Wire Data Communication...")
-    sleep(3)
-    run_shell_command("sudo raspi-config nonint do_blanking 1", step, total_steps, "Disabling screen blanking...")
-    sleep(3)
-    
-    create_desktop_icon()
-    create_node_red_icon()
-
     # Final Step: Installation complete
     update_progress(total_steps, total_steps, "Installation complete. Please reboot.")
     show_reboot_prompt()
@@ -233,13 +152,13 @@ def show_reboot_prompt():
     root.withdraw()
     final_window = tk.Tk()
     final_window.title("Installation Complete")
-    final_window.geometry("600x400")
+    final_window.geometry(f"{window_width}x{window_height}+{center_x}+{center_y}")
     final_window.configure(bg='#2e2e2e')
 
     final_label = tk.Label(final_window, text="Automata Building Management & HVAC Controller", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
     final_label.pack(pady=20)
 
-    final_message = tk.Label(final_window, text="A New Realm of Automation Awaits!\nPlease reboot to finalize settings and configuration files.\n\nReboot Now?", font=("Helvetica", 14), fg="orange", bg="#2e2e2e")
+    final_message = tk.Label(final_window, text="Please reboot to finalize settings.\nReboot now?", font=("Helvetica", 14), fg="orange", bg="#2e2e2e")
     final_message.pack(pady=20)
 
     button_frame = tk.Frame(final_window, bg='#2e2e2e')
