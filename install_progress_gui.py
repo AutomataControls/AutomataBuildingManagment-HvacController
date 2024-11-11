@@ -27,7 +27,7 @@ root.configure(bg='#2e2e2e')
 label = tk.Label(root, text="Automata Installation Progress", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
 label.pack(pady=20)
 
-# Footer message (Developed by A. Jewell Sr.)
+# Footer message
 footer_label = tk.Label(root, text="Developed by A. Jewell Sr, 2023", font=("Arial", 10), fg="#00b3b3", bg="#2e2e2e")
 footer_label.pack(side="bottom", pady=5)
 
@@ -51,7 +51,7 @@ def spin_animation():
             sleep(0.1)
             root.update_idletasks()
 
-# Function to update progress
+# Function to update progress bar and status
 def update_progress(step, total_steps, message):
     progress['value'] = (step / total_steps) * 100
     status_label.config(text=message)
@@ -61,15 +61,15 @@ def update_progress(step, total_steps, message):
 def run_shell_command(command, step, total_steps, message):
     update_progress(step, total_steps, message)
     try:
-        result = subprocess.run(command, shell=True, check=True, text=True, capture_output=True)
-        print(f"Command output: {result.stdout}")
+        subprocess.run(command, shell=True, check=True, text=True, capture_output=True)
     except subprocess.CalledProcessError as e:
         status_label.config(text=f"Error during: {message}. Check logs for details.")
         print(f"Error output: {e.stderr}")
     root.update_idletasks()
 
-# Function to create a desktop icon for updating boards
-def create_desktop_icon():
+# Function to create desktop icons
+def create_desktop_icons(step, total_steps):
+    # Update SmBoards Icon
     desktop_file = "/home/Automata/Desktop/UpdateSmBoards.desktop"
     icon_script = "/home/Automata/AutomataBuildingManagment-HvacController/update_sequent_boards.sh"
     icon_image = "/home/Automata/AutomataBuildingManagment-HvacController/splash.png"
@@ -84,14 +84,10 @@ Categories=Utility;
 """
     with open(desktop_file, "w") as f:
         f.write(icon_content)
-    
     subprocess.run(f"chmod +x {desktop_file}", shell=True)
     subprocess.run(f"chown Automata:Automata {desktop_file}", shell=True)
-    
-    print("Desktop icon for updating Sequent boards created successfully!")
 
-# Function to create a Node-RED desktop icon
-def create_node_red_icon():
+    # Node-RED Icon
     desktop_file = "/home/Automata/Desktop/OpenNodeRedUI.desktop"
     icon_image = "/home/Automata/AutomataBuildingManagment-HvacController/NodeRedlogo.png"
     icon_content = f"""[Desktop Entry]
@@ -105,11 +101,24 @@ Categories=Utility;
 """
     with open(desktop_file, "w") as f:
         f.write(icon_content)
-    
     subprocess.run(f"chmod +x {desktop_file}", shell=True)
     subprocess.run(f"chown Automata:Automata {desktop_file}", shell=True)
-    
-    print("Desktop icon for Node-RED created successfully!")
+
+    update_progress(step, total_steps, "Desktop icons created successfully.")
+    step += 1
+    return step
+
+# Function to install Node-RED
+def install_node_red(step, total_steps):
+    run_shell_command("sudo apt update", step, total_steps, "Updating package lists for Node-RED")
+    step += 1
+    run_shell_command("sudo apt install -y nodejs npm", step, total_steps, "Installing Node.js and npm")
+    step += 1
+    run_shell_command("sudo npm install -g --unsafe-perm node-red", step, total_steps, "Installing Node-RED globally")
+    step += 1
+    run_shell_command("node-red & sleep 5 && pkill -f node-red", step, total_steps, "Initializing Node-RED for the first time")
+    step += 1
+    return step
 
 # Function to install Node-RED palettes
 def install_node_red_palettes(step, total_steps):
@@ -137,9 +146,25 @@ def install_node_red_palettes(step, total_steps):
         step += 1
     return step
 
-# Function to run all installation steps
+# Function to configure NTP and timezone
+def configure_ntp(step, total_steps):
+    run_shell_command("sudo systemctl stop ntp", step, total_steps, "Stopping existing NTP service")
+    step += 1
+    run_shell_command("sudo apt install -y ntp", step, total_steps, "Installing NTP")
+    step += 1
+    run_shell_command("sudo systemctl enable ntp", step, total_steps, "Enabling NTP service")
+    step += 1
+    run_shell_command("sudo systemctl start ntp", step, total_steps, "Starting NTP service")
+    step += 1
+    run_shell_command("sudo ntpd -gq", step, total_steps, "Synchronizing time with NTP servers")
+    step += 1
+    run_shell_command("sudo timedatectl set-timezone America/New_York", step, total_steps, "Setting timezone to EST")
+    step += 1
+    return step
+
+# Run all installation steps
 def run_installation_steps():
-    total_steps = 50  # Adjusted to include all steps
+    total_steps = 50  # Adjusted to match all steps
     step = 1
 
     # Step 1: Adjust swap size
@@ -153,25 +178,16 @@ def run_installation_steps():
     step += 1
 
     # Step 5: Configure NTP
-    run_shell_command("sudo apt-get update", step, total_steps, "Updating package lists")
-    step += 1
-    run_shell_command("sudo apt-get install -y ntp", step, total_steps, "Installing NTP")
-    step += 1
-    run_shell_command("sudo systemctl enable ntp", step, total_steps, "Enabling NTP service")
-    step += 1
-    run_shell_command("sudo systemctl start ntp", step, total_steps, "Starting NTP service")
-    step += 1
-    run_shell_command("sudo ntpd -gq", step, total_steps, "Synchronizing time with NTP servers")
-    step += 1
-    run_shell_command("sudo timedatectl set-timezone America/New_York", step, total_steps, "Setting time zone to EST")
-    step += 1
+    step = configure_ntp(step, total_steps)
 
-    # Step 10: Install Node-RED palettes
+    # Step 10: Install Node-RED
+    step = install_node_red(step, total_steps)
+
+    # Step 15: Install Node-RED palettes
     step = install_node_red_palettes(step, total_steps)
 
-    # Step 25: Create desktop icons
-    create_desktop_icon()
-    create_node_red_icon()
+    # Step 30: Create desktop icons
+    step = create_desktop_icons(step, total_steps)
 
     # Final Step: Show completion message
     update_progress(total_steps, total_steps, "Installation complete. Please reboot.")
@@ -202,11 +218,11 @@ def show_reboot_prompt():
 
     final_window.mainloop()
 
-# Start the installation steps in a separate thread to keep the GUI responsive
+# Start installation steps in a separate thread
 threading.Thread(target=run_installation_steps, daemon=True).start()
 
-# Start spinner animation in a separate thread
+# Start spinner animation
 threading.Thread(target=spin_animation, daemon=True).start()
 
-# Tkinter main loop to keep the GUI running
+# Tkinter main loop
 root.mainloop()
