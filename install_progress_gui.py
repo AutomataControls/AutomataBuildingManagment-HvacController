@@ -17,7 +17,7 @@ root.configure(bg='#2e2e2e')
 label = tk.Label(root, text="Automata Installation Progress", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
 label.pack(pady=20)
 
-# Footer message (Developed by A. Jewell Sr.)
+# Footer message
 footer_label = tk.Label(root, text="Developed by A. Jewell Sr, 2023", font=("Arial", 10), fg="#00b3b3", bg="#2e2e2e")
 footer_label.pack(side="bottom", pady=5)
 
@@ -58,49 +58,6 @@ def run_shell_command(command, step, total_steps, message):
         print(f"Error output: {e.stderr}")
     root.update_idletasks()
 
-# Function to create a desktop icon for updating boards using splash.png as the icon
-def create_desktop_icon():
-    desktop_file = "/home/Automata/Desktop/UpdateSmBoards.desktop"
-    icon_script = "/home/Automata/AutomataBuildingManagment-HvacController/update_sequent_boards.sh"
-    icon_image = "/home/Automata/AutomataBuildingManagment-HvacController/splash.png"  # Path to splash.png
-    icon_content = f"""[Desktop Entry]
-Name=Update Sequent Boards
-Comment=Run the Sequent Board Update Script
-Exec=lxterminal -e "bash {icon_script}"
-Icon={icon_image}
-Terminal=false
-Type=Application
-Categories=Utility;
-"""
-    with open(desktop_file, "w") as f:
-        f.write(icon_content)
-
-    subprocess.run(f"chmod +x {desktop_file}", shell=True)
-    subprocess.run(f"chown Automata:Automata {desktop_file}", shell=True)
-
-    print("Desktop icon for updating Sequent boards created successfully!")
-
-# Function to create a Node-RED desktop icon
-def create_node_red_icon():
-    desktop_file = "/home/Automata/Desktop/OpenNodeRedUI.desktop"
-    icon_image = "/home/Automata/AutomataBuildingManagment-HvacController/NodeRedlogo.png"
-    icon_content = f"""[Desktop Entry]
-Name=Open Node-RED
-Comment=Open Node-RED UI and Dashboard
-Exec=sh -c "xdg-open http://127.0.0.1:1880/ & xdg-open http://127.0.0.1:1880/ui"
-Icon={icon_image}
-Terminal=false
-Type=Application
-Categories=Utility;
-"""
-    with open(desktop_file, "w") as f:
-        f.write(icon_content)
-
-    subprocess.run(f"chmod +x {desktop_file}", shell=True)
-    subprocess.run(f"chown Automata:Automata {desktop_file}", shell=True)
-
-    print("Desktop icon for Node-RED created successfully!")
-
 # Function to install Node-RED palette nodes
 def install_palette_node(node, step, total_steps):
     run_shell_command(f"cd /home/Automata/.node-red && npm install {node}", step, total_steps, f"Installing {node} palette node...")
@@ -108,7 +65,7 @@ def install_palette_node(node, step, total_steps):
 
 # Run all installation steps in order
 def run_installation_steps():
-    total_steps = 41  # Adjusted for all steps including Node.js installation
+    total_steps = 41
     step = 1
 
     # Step 1: Install Node.js v20
@@ -173,10 +130,78 @@ def run_installation_steps():
         sleep(5)
         step += 1
 
-    # Continue with the rest of the steps as previously defined...
+    # Step 19: Create theme collection directory
+    run_shell_command("mkdir -p /home/Automata/.node-red/node_modules/@node-red-contrib-themes/theme-collection/themes", step, total_steps, "Creating theme collection directory...")
+    step += 1
 
-# Start the installation steps in a separate thread to keep the GUI responsive
-threading.Thread(target=run_installation_steps, daemon=True).start()
+    # Step 20: Install Node-RED
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", step, total_steps, "Installing Node-RED... This could take some time.")
+    sleep(5)
+    step += 1
+
+    # Step 21-40: Install Node-RED palette nodes
+    palette_nodes = [
+        "node-red-contrib-ui-led",
+        "node-red-dashboard",
+        "node-red-contrib-sm-16inpind",
+        "node-red-contrib-sm-16relind",
+        "node-red-contrib-sm-8inputs",
+        "node-red-contrib-sm-8relind",
+        "node-red-contrib-sm-bas",
+        "node-red-contrib-sm-ind",
+        "node-red-node-openweathermap",
+        "node-red-contrib-influxdb",
+        "node-red-node-email",
+        "node-red-contrib-boolean-logic-ultimate",
+        "node-red-contrib-cpu",
+        "node-red-contrib-bme280-rpi",
+        "node-red-contrib-bme280",
+        "node-red-node-aws",
+        "@node-red-contrib-themes/theme-collection"
+    ]
+    for node in palette_nodes:
+        install_palette_node(node, step, total_steps)
+        step += 1
+
+    # Step 41: Final configurations
+    run_shell_command("sudo raspi-config nonint do_vnc 0", step, total_steps, "Enabling Remote Access via RealVNC...")
+    sleep(3)
+
+    update_progress(total_steps, total_steps, "Installation complete. Please reboot.")
+    show_reboot_prompt()
+
+# Function to show the reboot prompt
+def show_reboot_prompt():
+    root.withdraw()
+    final_window = tk.Tk()
+    final_window.title("Installation Complete")
+    final_window.geometry("600x400")
+    final_window.configure(bg='#2e2e2e')
+
+    final_label = tk.Label(final_window, text="Automata Building Management & HVAC Controller", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
+    final_label.pack(pady=20)
+
+    final_message = tk.Label(final_window, text="A New Realm of Automation Awaits!\nPlease reboot to finalize settings and configuration files.\n\nReboot Now?", font=("Helvetica", 14), fg="orange", bg="#2e2e2e")
+    final_message.pack(pady=20)
+
+    button_frame = tk.Frame(final_window, bg='#2e2e2e')
+    button_frame.pack(pady=20)
+
+    reboot_button = tk.Button(button_frame, text="Yes", font=("Helvetica", 12), command=lambda: os.system('sudo reboot'), bg='#00b3b3', fg="black", width=10)
+    reboot_button.grid(row=0, column=0, padx=10)
+
+    exit_button = tk.Button(button_frame, text="No", font=("Helvetica", 12), command=final_window.destroy, bg='orange', fg="black", width=10)
+    exit_button.grid(row=0, column=1, padx=10)
+
+    final_window.mainloop()
 
 # Start spinner animation in a separate thread
-threading.Thread(target=spin_animation, daemon=True).start()
+spinner_thread = threading.Thread(target=spin_animation, daemon=True)
+spinner_thread.start()
+
+# Start installation steps in a separate thread
+installation_thread = threading.Thread(target=run_installation_steps, daemon=True)
+installation_thread.start()
+
+# Start the Tkinter main loop
+root.mainloop()
