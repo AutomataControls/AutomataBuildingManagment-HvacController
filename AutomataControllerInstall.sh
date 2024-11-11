@@ -93,10 +93,10 @@ done
 
 # Step 8: Run the installation progress GUI
 log "Running installation GUI..."
-sudo -u Automata DISPLAY=:0 python3 /home/Automata/install_progress_gui.py &
+sudo -u Automata DISPLAY=:0 python3 /home/Automata//AutomataBuildingManagment-HvacController/install_progress_gui.py &
 
 # Keep the script running until the Python process ends
-while pgrep -f "python3 /home/Automata/install_progress_gui.py" > /dev/null; do
+while pgrep -f "python3 /home/Automata//AutomataBuildingManagment-HvacController/install_progress_gui.py" > /dev/null; do
     sleep 1
 done
 
