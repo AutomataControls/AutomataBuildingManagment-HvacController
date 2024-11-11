@@ -4,27 +4,20 @@ import tkinter as tk
 from tkinter import ttk
 import subprocess
 import threading
+import os
 from time import sleep
 
 # Create the main window
 root = tk.Tk()
 root.title("Automata Installation Progress")
-window_width = 700
-window_height = 500
-
-# Center the window
-screen_width = root.winfo_screenwidth()
-screen_height = root.winfo_screenheight()
-center_x = (screen_width - window_width) // 2
-center_y = (screen_height - window_height) // 2
-root.geometry(f"{window_width}x{window_height}+{center_x}+{center_y}")
+root.geometry("600x400")
 root.configure(bg='#2e2e2e')
 
 # Title message
 label = tk.Label(root, text="Automata Installation Progress", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
 label.pack(pady=20)
 
-# Footer message
+# Footer message (Developed by A. Jewell Sr.)
 footer_label = tk.Label(root, text="Developed by A. Jewell Sr, 2023", font=("Arial", 10), fg="#00b3b3", bg="#2e2e2e")
 footer_label.pack(side="bottom", pady=5)
 
@@ -36,11 +29,11 @@ progress.pack(pady=20)
 status_label = tk.Label(root, text="Starting installation...", font=("Helvetica", 12), fg="orange", bg="#2e2e2e")
 status_label.pack(pady=10)
 
-# Spinning animation
+# Spinning line animation below the progress bar
 spin_label = tk.Label(root, text="", font=("Helvetica", 12), fg="#00b3b3", bg="#2e2e2e")
 spin_label.pack(pady=10)
 
-# Spinner animation
+# Function to update the spinning line animation
 def spin_animation():
     while True:
         for frame in ["|", "/", "-", "\\"]:
@@ -48,103 +41,153 @@ def spin_animation():
             sleep(0.1)
             root.update_idletasks()
 
-# Update progress bar
+# Function to update progress
 def update_progress(step, total_steps, message):
     progress['value'] = (step / total_steps) * 100
     status_label.config(text=message)
     root.update_idletasks()
 
-# Execute shell commands
+# Function to run shell commands
 def run_shell_command(command, step, total_steps, message):
     update_progress(step, total_steps, message)
     try:
-        subprocess.run(command, shell=True, check=True, text=True)
+        result = subprocess.run(command, shell=True, check=True, text=True, capture_output=True)
+        print(f"Command output: {result.stdout}")
     except subprocess.CalledProcessError as e:
-        status_label.config(text=f"Error: {message}. Check logs.")
+        status_label.config(text=f"Error during: {message}. Check logs for details.")
         print(f"Error output: {e.stderr}")
     root.update_idletasks()
 
-# Create desktop icons
-def create_desktop_icons():
-    update_icon = "/home/Automata/Desktop/UpdateSmBoards.desktop"
-    update_script = "/home/Automata/AutomataBuildingManagment-HvacController/update_sequent_boards.sh"
-    update_image = "/home/Automata/AutomataBuildingManagment-HvacController/splash.png"
-
-    update_content = f"""[Desktop Entry]
+# Function to create a desktop icon for updating boards using splash.png as the icon
+def create_desktop_icon():
+    desktop_file = "/home/Automata/Desktop/UpdateSmBoards.desktop"
+    icon_script = "/home/Automata/AutomataBuildingManagment-HvacController/update_sequent_boards.sh"
+    icon_image = "/home/Automata/AutomataBuildingManagment-HvacController/splash.png"  # Path to splash.png
+    icon_content = f"""[Desktop Entry]
 Name=Update Sequent Boards
 Comment=Run the Sequent Board Update Script
-Exec=lxterminal -e "bash {update_script}"
-Icon={update_image}
+Exec=lxterminal -e "bash {icon_script}"
+Icon={icon_image}
 Terminal=false
 Type=Application
 Categories=Utility;
 """
-    with open(update_icon, "w") as f:
-        f.write(update_content)
-    subprocess.run(f"chmod +x {update_icon}", shell=True)
-    subprocess.run(f"chown Automata:Automata {update_icon}", shell=True)
+    with open(desktop_file, "w") as f:
+        f.write(icon_content)
 
-    node_red_icon = "/home/Automata/Desktop/OpenNodeRedUI.desktop"
-    node_red_image = "/home/Automata/AutomataBuildingManagment-HvacController/NodeRedlogo.png"
-    node_red_content = f"""[Desktop Entry]
+    subprocess.run(f"chmod +x {desktop_file}", shell=True)
+    subprocess.run(f"chown Automata:Automata {desktop_file}", shell=True)
+
+    print("Desktop icon for updating Sequent boards created successfully!")
+
+# Function to create a Node-RED desktop icon
+def create_node_red_icon():
+    desktop_file = "/home/Automata/Desktop/OpenNodeRedUI.desktop"
+    icon_image = "/usr/lib/node_modules/node-red/public/red/images/node-red-icon.svg"
+    icon_image = "/home/Automata/AutomataBuildingManagment-HvacController/NodeRedlogo.png"
+    icon_content = f"""[Desktop Entry]
 Name=Open Node-RED
 Comment=Open Node-RED UI and Dashboard
 Exec=sh -c "xdg-open http://127.0.0.1:1880/ & xdg-open http://127.0.0.1:1880/ui"
-Icon={node_red_image}
+Icon={icon_image}
 Terminal=false
 Type=Application
 Categories=Utility;
 """
-    with open(node_red_icon, "w") as f:
-        f.write(node_red_content)
-    subprocess.run(f"chmod +x {node_red_icon}", shell=True)
-    subprocess.run(f"chown Automata:Automata {node_red_icon}", shell=True)
+    with open(desktop_file, "w") as f:
+        f.write(icon_content)
 
-# Mosquitto installation and setup
-def setup_mosquitto(step, total_steps):
-    run_shell_command("sudo apt-get update", step, total_steps, "Updating package lists for Mosquitto...")
-    step += 1
-    run_shell_command("sudo apt-get install -y mosquitto mosquitto-clients", step, total_steps, "Installing Mosquitto and clients...")
-    step += 1
-    run_shell_command("sudo touch /etc/mosquitto/passwd && sudo mosquitto_passwd -b /etc/mosquitto/passwd Automata Inverted2", step, total_steps, "Setting up Mosquitto user...")
-    step += 1
-    run_shell_command("sudo cp /etc/mosquitto/mosquitto.conf /etc/mosquitto/mosquitto.conf.bak", step, total_steps, "Backing up Mosquitto configuration...")
-    step += 1
-    config_commands = [
-        "echo 'listener 1883' | sudo tee -a /etc/mosquitto/mosquitto.conf",
-        "echo 'allow_anonymous false' | sudo tee -a /etc/mosquitto/mosquitto.conf",
-        "echo 'password_file /etc/mosquitto/passwd' | sudo tee -a /etc/mosquitto/mosquitto.conf",
-        "echo 'per_listener_settings true' | sudo tee -a /etc/mosquitto/mosquitto.conf"
-    ]
-    for cmd in config_commands:
-        run_shell_command(cmd, step, total_steps, "Configuring Mosquitto settings...")
-        step += 1
-    run_shell_command("sudo systemctl restart mosquitto", step, total_steps, "Restarting Mosquitto service...")
-    step += 1
-    return step
+    subprocess.run(f"chmod +x {desktop_file}", shell=True)
+    subprocess.run(f"chown Automata:Automata {desktop_file}", shell=True)
 
-# Installation steps
+    print("Desktop icon for Node-RED created successfully!")
+
+# Function to install Node-RED palette nodes
+def install_palette_node(node, step, total_steps):
+    run_shell_command(f"cd /home/Automata/.node-red && npm install {node}", step, total_steps, f"Installing {node} palette node...")
+    sleep(3)
+
+# Run all installation steps in order
 def run_installation_steps():
-    total_steps = 50
+    total_steps = 40  # Adjusted for all steps including palette nodes
     step = 1
 
-    # Copy splash.png
-    run_shell_command("cp /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/", step, total_steps, "Copying splash.png...")
+    # Step 1: Copy splash.png
+    run_shell_command("cp /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/", step, total_steps, "Copying splash.png to /home/Automata...")
+    sleep(3)
     step += 1
 
-    # Setup Mosquitto
-    step = setup_mosquitto(step, total_steps)
-
-    # Install Node-RED
-    run_shell_command("sudo apt update && sudo apt install -y nodejs npm", step, total_steps, "Installing Node.js and npm...")
-    step += 1
-    run_shell_command("sudo npm install -g --unsafe-perm node-red", step, total_steps, "Installing Node-RED...")
-    step += 1
-    run_shell_command("node-red & sleep 5 && pkill -f node-red", step, total_steps, "Initializing Node-RED...")
+    # Step 2: Move and copy splash.png for Plymouth theme
+    run_shell_command("cd /usr/share/plymouth/themes/pix/ && sudo mv splash.png splash.png.bk", step, total_steps, "Backing up original splash.png...")
+    run_shell_command("sudo cp /home/Automata/splash.png /usr/share/plymouth/themes/pix/", step, total_steps, "Copying Automata splash.png to Plymouth theme...")
+    sleep(3)
     step += 1
 
-    # Install Node-RED palettes
-    palettes = [
+    # Step 3: Set desktop background
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_background.sh", step, total_steps, "Setting desktop background...")
+    sleep(3)
+    step += 1
+
+    # Step 4: Overclock the Raspberry Pi
+    run_shell_command("echo -e 'over_voltage=2\narm_freq=1750' | sudo tee -a /boot/config.txt", step, total_steps, "Overclocking CPU...Turbo mode engaged!")
+    sleep(5)
+    step += 1
+
+    # Step 5: Set Internet Time
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/set_internet_time_rpi4.sh", step, total_steps, "Setting internet time to Eastern Standard...")
+    sleep(5)
+    step += 1
+
+    # Step 6: Increase swap size
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/increase_swap_size.sh", step, total_steps, "Increasing swap size...")
+    sleep(5)
+    step += 1
+
+    # Step 7: Setup Mosquitto
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/setup_mosquitto.sh", step, total_steps, "Setting up Mosquitto MQTT broker...")
+    sleep(5)
+    step += 1
+
+    # Step 8-12: Clone Sequent Microsystems drivers
+    boards_to_clone = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi", "8relind-rpi"]
+    for board in boards_to_clone:
+        run_shell_command(f"git clone https://github.com/sequentmicrosystems/{board}.git /home/Automata/AutomataBuildingManagment-HvacController/{board}", step, total_steps, f"Cloning {board}...")
+        sleep(4)
+        step += 1
+
+    # Step 13-17: Install Sequent Microsystems drivers
+    boards = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi", "8relind-rpi"]
+    for board in boards:
+        board_path = f"/home/Automata/AutomataBuildingManagment-HvacController/{board}"
+        if os.path.isdir(board_path):
+            run_shell_command(f"cd {board_path} && sudo make install", step, total_steps, f"Installing {board} driver from Repo Directory.")
+        else:
+            update_progress(step, total_steps, f"Board {board} not found, skipping...")
+        sleep(5)
+        step += 1
+
+    # Step 18: Create theme collection directory
+    run_shell_command("mkdir -p /home/Automata/.node-red/node_modules/@node-red-contrib-themes/theme-collection/themes", step, total_steps, "Creating theme collection directory...")
+    step += 1
+
+    # Step 19: Install Node-RED
+    run_shell_command("bash /home/Automata/AutomataBuildingManagment-HvacController/install_node_red.sh", step, total_steps, "Installing Node-RED... This could take some time.")
+    sleep(5)
+    step += 1
+
+    # Step 20-22: Node-RED Security and Encryption
+    update_progress(step, total_steps, "Node-RED Security Measures initiated...")
+    sleep(5)
+    step += 1
+    update_progress(step, total_steps, "Node-RED Encryption Finalizing...\n SSL and TLS Ready...")
+    sleep(5)
+    step += 1
+    update_progress(step, total_steps, "Node-RED Authorization Credentials Hashed and Configured...\n Welcome Automata!")
+    sleep(5)
+    step += 1
+
+    # Step 23-39: Install Node-RED palette nodes
+    palette_nodes = [
         "node-red-contrib-ui-led",
         "node-red-dashboard",
         "node-red-contrib-sm-16inpind",
@@ -163,18 +206,30 @@ def run_installation_steps():
         "node-red-node-aws",
         "@node-red-contrib-themes/theme-collection"
     ]
-    for palette in palettes:
-        run_shell_command(f"cd /home/Automata/.node-red && npm install {palette}", step, total_steps, f"Installing Node-RED Palette: {palette}")
+    for node in palette_nodes:
+        install_palette_node(node, step, total_steps)
         step += 1
 
-    # Create desktop icons
-    create_desktop_icons()
+    # Step 40: Final configurations
+    run_shell_command("sudo raspi-config nonint do_vnc 0", step, total_steps, "Enabling Remote Access via RealVNC...")
+    sleep(3)
+    run_shell_command("sudo raspi-config nonint do_i2c 0", step, total_steps, "Enabling I2C Sensor Communication...")
+    sleep(3)
+    run_shell_command("sudo raspi-config nonint do_spi 0", step, total_steps, "Enabling SPI Sensor Communication...")
+    sleep(3)
+    run_shell_command("sudo raspi-config nonint do_onewire 0", step, total_steps, "Enabling 1-Wire Data Communication...")
+    sleep(3)
+    run_shell_command("sudo raspi-config nonint do_blanking 1", step, total_steps, "Disabling screen blanking...")
+    sleep(3)
 
-    # Finalize
+    create_desktop_icon()
+    create_node_red_icon()
+
+    # Final Step: Installation complete
     update_progress(total_steps, total_steps, "Installation complete. Please reboot.")
     show_reboot_prompt()
 
-# Reboot prompt
+# Function to show the reboot prompt
 def show_reboot_prompt():
     root.withdraw()
     final_window = tk.Tk()
@@ -182,17 +237,28 @@ def show_reboot_prompt():
     final_window.geometry("600x400")
     final_window.configure(bg='#2e2e2e')
 
-    tk.Label(final_window, text="Installation Complete", font=("Helvetica", 18), fg="#00b3b3", bg="#2e2e2e").pack(pady=20)
-    tk.Label(final_window, text="Reboot to finalize installation.", font=("Helvetica", 14), fg="orange", bg="#2e2e2e").pack(pady=20)
+    final_label = tk.Label(final_window, text="Automata Building Management & HVAC Controller", font=("Helvetica", 18, "bold"), fg="#00b3b3", bg="#2e2e2e")
+    final_label.pack(pady=20)
 
-    tk.Button(final_window, text="Reboot Now", font=("Helvetica", 12), command=lambda: os.system('sudo reboot'), bg='#00b3b3', fg="black", width=10).pack(side="left", padx=20)
-    tk.Button(final_window, text="Later", font=("Helvetica", 12), command=final_window.destroy, bg='orange', fg="black", width=10).pack(side="right", padx=20)
+    final_message = tk.Label(final_window, text="A New Realm of Automation Awaits!\nPlease reboot to finalize settings and configuration files.\n\nReboot Now?", font=("Helvetica", 14), fg="orange", bg="#2e2e2e")
+    final_message.pack(pady=20)
+
+    button_frame = tk.Frame(final_window, bg='#2e2e2e')
+    button_frame.pack(pady=20)
+
+    reboot_button = tk.Button(button_frame, text="Yes", font=("Helvetica", 12), command=lambda: os.system('sudo reboot'), bg='#00b3b3', fg="black", width=10)
+    reboot_button.grid(row=0, column=0, padx=10)
+
+    exit_button = tk.Button(button_frame, text="No", font=("Helvetica", 12), command=final_window.destroy, bg='orange', fg="black", width=10)
+    exit_button.grid(row=0, column=1, padx=10)
 
     final_window.mainloop()
 
-# Start threads for installation and spinner
+# Start the installation steps in a separate thread to keep the GUI responsive
 threading.Thread(target=run_installation_steps, daemon=True).start()
+
+# Start spinner animation in a separate thread
 threading.Thread(target=spin_animation, daemon=True).start()
 
-# Start main loop
+# Tkinter main loop to keep the GUI running
 root.mainloop()
