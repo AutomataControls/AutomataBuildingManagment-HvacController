@@ -68,7 +68,7 @@ def run_shell_command(command, step, total_steps, message):
         print(f"Error output: {e.stderr}")
     root.update_idletasks()
 
-# Function to create a desktop icon for updating boards using splash.png as the icon
+# Function to create a desktop icon for updating boards
 def create_desktop_icon():
     desktop_file = "/home/Automata/Desktop/UpdateSmBoards.desktop"
     icon_script = "/home/Automata/AutomataBuildingManagment-HvacController/update_sequent_boards.sh"
@@ -111,43 +111,73 @@ Categories=Utility;
     
     print("Desktop icon for Node-RED created successfully!")
 
-# Function to install Node-RED palette nodes
-def install_palette_node(node, step, total_steps):
-    run_shell_command(f"cd /home/Automata/.node-red && npm install {node}", step, total_steps, f"Installing {node} palette node...")
-    sleep(3)
+# Function to install Node-RED palettes
+def install_node_red_palettes(step, total_steps):
+    palettes = [
+        "node-red-contrib-ui-led",
+        "node-red-dashboard",
+        "node-red-contrib-sm-16inpind",
+        "node-red-contrib-sm-16relind",
+        "node-red-contrib-sm-8inputs",
+        "node-red-contrib-sm-8relind",
+        "node-red-contrib-sm-bas",
+        "node-red-contrib-sm-ind",
+        "node-red-node-openweathermap",
+        "node-red-contrib-influxdb",
+        "node-red-node-email",
+        "node-red-contrib-boolean-logic-ultimate",
+        "node-red-contrib-cpu",
+        "node-red-contrib-bme280-rpi",
+        "node-red-contrib-bme280",
+        "node-red-node-aws",
+        "node-red-contrib-themes/theme-collection",
+    ]
+    for palette in palettes:
+        run_shell_command(f"cd /home/Automata/.node-red && npm install {palette}", step, total_steps, f"Installing Node-RED Palette: {palette}")
+        step += 1
+    return step
 
-# Run all installation steps in order
+# Function to run all installation steps
 def run_installation_steps():
-    total_steps = 40
+    total_steps = 50  # Adjusted to include all steps
     step = 1
 
-    # Step 1: Copy splash.png
-    run_shell_command("cp /home/Automata/AutomataBuildingManagment-HvacController/splash.png /home/Automata/", step, total_steps, "Copying splash.png to /home/Automata...")
-    sleep(3)
+    # Step 1: Adjust swap size
+    run_shell_command("sudo dphys-swapfile swapoff", step, total_steps, "Turning off swap")
+    step += 1
+    run_shell_command("sudo sed -i 's/^CONF_SWAPSIZE=.*/CONF_SWAPSIZE=4096/' /etc/dphys-swapfile", step, total_steps, "Setting swap size to 4GB")
+    step += 1
+    run_shell_command("sudo dphys-swapfile setup", step, total_steps, "Setting up new swap size")
+    step += 1
+    run_shell_command("sudo dphys-swapfile swapon", step, total_steps, "Turning on swap")
     step += 1
 
-    # Step 2: Move and copy splash.png for Plymouth theme
-    run_shell_command("cd /usr/share/plymouth/themes/pix/ && sudo mv splash.png splash.png.bk", step, total_steps, "Backing up original splash.png...")
-    run_shell_command("sudo cp /home/Automata/splash.png /usr/share/plymouth/themes/pix/", step, total_steps, "Copying Automata splash.png to Plymouth theme...")
-    sleep(3)
+    # Step 5: Configure NTP
+    run_shell_command("sudo apt-get update", step, total_steps, "Updating package lists")
+    step += 1
+    run_shell_command("sudo apt-get install -y ntp", step, total_steps, "Installing NTP")
+    step += 1
+    run_shell_command("sudo systemctl enable ntp", step, total_steps, "Enabling NTP service")
+    step += 1
+    run_shell_command("sudo systemctl start ntp", step, total_steps, "Starting NTP service")
+    step += 1
+    run_shell_command("sudo ntpd -gq", step, total_steps, "Synchronizing time with NTP servers")
+    step += 1
+    run_shell_command("sudo timedatectl set-timezone America/New_York", step, total_steps, "Setting time zone to EST")
     step += 1
 
-    # Step 13-17: Install Sequent Microsystems drivers
-    boards = ["megabas-rpi", "megaind-rpi", "16univin-rpi", "16relind-rpi", "8relind-rpi"]
-    for board in boards:
-        board_path = f"/home/Automata/AutomataBuildingManagment-HvacController/{board}"
-        if os.path.isdir(board_path):
-            run_shell_command(f"cd {board_path} && sudo make install", step, total_steps, f"Installing {board} driver from Repo Directory.")
-        else:
-            update_progress(step, total_steps, f"Board {board} not found, skipping...")
-        sleep(5)
-        step += 1
+    # Step 10: Install Node-RED palettes
+    step = install_node_red_palettes(step, total_steps)
 
-    # Final Step: Installation complete
+    # Step 25: Create desktop icons
+    create_desktop_icon()
+    create_node_red_icon()
+
+    # Final Step: Show completion message
     update_progress(total_steps, total_steps, "Installation complete. Please reboot.")
     show_reboot_prompt()
 
-# Function to show the reboot prompt
+# Function to show reboot prompt
 def show_reboot_prompt():
     root.withdraw()
     final_window = tk.Tk()
