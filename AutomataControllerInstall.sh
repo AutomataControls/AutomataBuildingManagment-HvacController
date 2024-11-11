@@ -58,24 +58,7 @@ find "$REPO_DIR" -type f -name "*.png" -exec chmod +r {} \;
 log "Converting line endings for all .sh and .py files to Unix format..."
 find "$REPO_DIR" -type f \( -name "*.sh" -o -name "*.py" \) -exec dos2unix {} \;
 
-# Step 6: Enable hardware configurations
-log "Enabling VNC..."
-run_shell_command "sudo raspi-config nonint do_vnc 0"
-sleep 3
-log "Enabling I2C..."
-run_shell_command "sudo raspi-config nonint do_i2c 0"
-sleep 3
-log "Enabling SPI..."
-run_shell_command "sudo raspi-config nonint do_spi 0"
-sleep 3
-log "Enabling 1-Wire..."
-run_shell_command "sudo raspi-config nonint do_onewire 0"
-sleep 3
-log "Disabling screen blanking..."
-run_shell_command "sudo raspi-config nonint do_blanking 1"
-sleep 3
-
-# Step 7: Clone Sequent Microsystems board repositories
+# Step 6: Clone Sequent Microsystems board repositories
 BOARDS=("megabas-rpi" "megaind-rpi" "16relind-rpi" "8relind-rpi" "16univin-rpi")
 REPO_BASE_URL="https://github.com/SequentMicrosystems"
 
@@ -91,12 +74,12 @@ for board in "${BOARDS[@]}"; do
     fi
 done
 
-# Step 8: Run the installation progress GUI
+# Step 7: Run the installation progress GUI
 log "Running installation GUI..."
-sudo -u Automata DISPLAY=:0 python3 /home/Automata//AutomataBuildingManagment-HvacController/install_progress_gui.py &
+sudo -u Automata DISPLAY=:0 python3 /home/Automata/AutomataBuildingManagment-HvacController/install_progress_gui.py &
 
 # Keep the script running until the Python process ends
-while pgrep -f "python3 /home/Automata//AutomataBuildingManagment-HvacController/install_progress_gui.py" > /dev/null; do
+while pgrep -f "python3 /home/Automata/AutomataBuildingManagment-HvacController/install_progress_gui.py" > /dev/null; do
     sleep 1
 done
 
