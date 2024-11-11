@@ -36,7 +36,7 @@ log "Installation started"
 
 # Step 3: Install minimal dependencies for GUI creation
 log "Installing minimal dependencies for GUI creation..."
-apt-get install -y python3-tk python3-pil python3-pil.imagetk gnome-terminal dos2unix git build-essential
+apt-get install -y python3-tk python3-pil python3-pil.imagetk gnome-terminal dos2unix git
 
 # Step 4: Clone the AutomataControls repository and set permissions
 REPO_DIR="/home/Automata/AutomataBuildingManagment-HvacController"
@@ -75,20 +75,20 @@ log "Disabling screen blanking..."
 run_shell_command "sudo raspi-config nonint do_blanking 1"
 sleep 3
 
-# Step 7: Clone and install Sequent Microsystems board drivers
+# Step 7: Clone Sequent Microsystems board repositories
 BOARDS=("megabas-rpi" "megaind-rpi" "16relind-rpi" "8relind-rpi" "16univin-rpi")
 REPO_BASE_URL="https://github.com/SequentMicrosystems"
 
-log "Cloning and installing Sequent Microsystems board drivers..."
+log "Cloning Sequent Microsystems board repositories..."
 for board in "${BOARDS[@]}"; do
     BOARD_DIR="/home/Automata/${board}"
     if [ ! -d "$BOARD_DIR" ]; then
         log "Cloning $board repository..."
         run_shell_command "git clone ${REPO_BASE_URL}/${board}.git $BOARD_DIR"
+        sleep 3
+    else
+        log "$board repository already exists, skipping clone."
     fi
-    log "Installing $board driver..."
-    run_shell_command "cd $BOARD_DIR && sudo make install"
-    sleep 8
 done
 
 # Step 8: Run the installation progress GUI
